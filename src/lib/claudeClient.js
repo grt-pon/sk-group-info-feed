@@ -6,6 +6,12 @@ const MODEL = "claude-sonnet-5";
 
 let client;
 
+// Claudeがコードフェンス(```json ... ```)で囲んで返すことがあるため、JSON.parse前に取り除く。
+function parseJsonResponse(text) {
+  const stripped = text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "").trim();
+  return JSON.parse(stripped);
+}
+
 function getClient() {
   if (!client) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -64,7 +70,7 @@ ${rawText}
     .trim();
 
   try {
-    const parsed = JSON.parse(text);
+    const parsed = parseJsonResponse(text);
     return {
       title: parsed.title || title,
       summary: parsed.summary,
@@ -113,7 +119,7 @@ export async function isMatchingPrimarySource({ headlineTitle, headlineOrg, cand
     .trim();
 
   try {
-    const parsed = JSON.parse(text);
+    const parsed = parseJsonResponse(text);
     return parsed.matches === true;
   } catch (err) {
     throw new Error(`Claudeの出力をJSONとして解釈できませんでした: ${text}`);
