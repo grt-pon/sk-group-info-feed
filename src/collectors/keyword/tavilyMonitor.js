@@ -1,0 +1,42 @@
+import { searchRecent } from "../../lib/tavilyClient.js";
+import { ingestItem } from "../../pipeline/ingest.js";
+import { isLikelyDisposalGuide } from "../../config/categoryRules.js";
+
+const SOURCE_ID = "general-keyword-watch";
+const SOURCE_NAME = "一般キーワード監視(Tavily)";
+
+// 古紙まわりで拾いたいキーワード。要る/要らないの傾向を見ながらここを調整していく想定。
+// 「動向」「価格」「統計」等を付けて、自治体の「ごみの出し方」的な定型ページより
+// ニュース・市況寄りの内容が上位に出るよう調整した(実際に試したところ効果があった)。
+const KEYWORDS = ["古紙 相場 動向", "古紙 リサイクル 業界 動向", "段ボール古紙 価格", "古紙 輸出 統計"];
+
+/**
+ * 登録済みキーワードでTavily検索し、新着記事を取り込みパイプラインに渡す。
+ * @returns {Promise<Array<{ title: string, skipped: boolean, reason?: string, itemId?: string }>>}
+ */
+export async function collectByKeywordWatch() {
+  const results = [];
+
+  for (const keyword of KEYWORDS) {
+    const found = await searchRecent(keyword, { days: 3, maxResults: 8 });
+
+    for (const article of found) {
+      if (isLikelyDisposalGuide(article.title)) {
+        results.push({ title: article.title, skipped: true, reason: "disposal_guide_noise" });
+        continue;
+      }
+      const result = await ingestItem({
+        title: article.title,
+        rawText: article.content,
+        sourceUrl: article.url,
+        sourceId: SOURCE_ID,
+        sourceName: SOURCE_NAME,
+        isPrimarySource: false,
+        publishedAt: article.publishedDate
+      });
+      results.push({ title: article.title, ...result });
+    }
+  }
+
+  return results;
+}

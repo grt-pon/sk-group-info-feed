@@ -1,0 +1,24 @@
+-- SupabaseのSQL Editorでこのファイルの内容を実行してください。
+-- items テーブル: 収集・要約済みの記事1件につき1行(元記事の全文は保存しない)。
+
+create table if not exists items (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  summary text not null,
+  source_url text not null,
+  source_id text not null,
+  source_name text not null,
+  is_primary_source boolean not null default false,
+  categories text[] not null default '{}',
+  published_at timestamptz,
+  collected_at timestamptz not null default now(),
+  reactions jsonb not null default '[]'::jsonb
+);
+
+-- 重複排除(source_url + published_at)のチェックを速くするための索引
+create index if not exists items_source_url_published_at_idx
+  on items (source_url, published_at);
+
+-- 参考: 他の人がSupabaseの「Table Editor」で直接データを見たり、SQLで集計したりできます。
+-- 例: カテゴリ別の件数
+-- select unnest(categories) as category, count(*) from items group by category order by count(*) desc;

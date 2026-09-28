@@ -1,0 +1,20 @@
+{
+  "name": "kamishi-info-collector",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "古紙業界向け情報収集パイプライン(SKグループ情報フィード バックエンド)",
+  "scripts": {
+    "collect": "node scripts/runOnce.js",
+    "serve": "node src/server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
+    "@supabase/supabase-js": "^2.117.2",
+    "@tavily/core": "^0.7.11",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1",
+    "firebase-admin": "^12.6.0"
+  }
+}

@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SKグループ 情報フィード(ローカル)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap">
+<style>
+  :root { --accent: #4642A0; --accent-tint: #ece9f7; --bg: #f9f9fa; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', sans-serif; background: var(--bg); color: #222; }
+  a { color: #222; text-decoration: none; }
+  a:hover { color: var(--accent); }
+  button { font-family: inherit; cursor: pointer; }
+  .layout { display: flex; align-items: stretch; min-height: 100vh; }
+  .sidebar { width: 264px; flex-shrink: 0; background: #fdfdfe; border-right: 1px solid #e6e6e8; display: flex; flex-direction: column; padding: 28px 20px; gap: 22px; position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow-y: auto; }
+  .logo-row { display: flex; align-items: center; gap: 10px; }
+  .logo-mark { width: 36px; height: 36px; border-radius: 9px; background: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .logo-text { display: flex; flex-direction: column; line-height: 1.25; }
+  .logo-text b { font-size: 17px; letter-spacing: 0.02em; }
+  .logo-text span { font-size: 11px; color: #888; }
+  .cat-list { display: flex; flex-direction: column; gap: 1px; }
+  .cat-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-radius: 8px; font-size: 14px; color: #333; background: none; border: none; width: 100%; text-align: left; }
+  .cat-row:hover { background: #f1f0f8; }
+  .cat-row.active { background: rgba(70,66,160,0.1); color: var(--accent); font-weight: 700; }
+  .cat-row .count { font-size: 12px; color: #999; }
+  .cat-row.active .count { color: var(--accent); }
+  .main { flex: 1; padding: 32px 40px 64px; display: flex; justify-content: center; }
+  .main-inner { width: 100%; max-width: 980px; display: flex; flex-direction: column; gap: 30px; }
+  .search-row { display: flex; gap: 10px; }
+  .search-box { flex: 1; display: flex; align-items: center; gap: 8px; background: white; border: 1px solid #ddd; border-radius: 10px; padding: 10px 14px; }
+  .search-box input { border: none; outline: none; font: inherit; font-size: 13.5px; width: 100%; }
+  .status-line { font-size: 12.5px; color: #888; }
+  .section-head { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: 1px solid #e2e2e4; padding-bottom: 10px; }
+  .section-head .num { font-size: 12px; font-weight: 700; color: var(--accent); margin-right: 10px; }
+  .section-head h2 { display: inline; margin: 0; font-size: 17px; font-weight: 700; }
+  .hero { display: flex; gap: 28px; align-items: flex-start; }
+  .hero-icon { width: 230px; height: 150px; flex-shrink: 0; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+  .hero-body { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .kicker { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; }
+  .hero-body h3 { margin: 0; font-size: 24px; line-height: 1.45; font-weight: 700; color: #111; }
+  .hero-body p { margin: 0; font-size: 14px; line-height: 1.85; color: #444; }
+  .meta-row { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+  .meta-text { font-size: 12px; color: #777; }
+  .actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .actions button { background: none; border: none; color: #888; padding: 4px; display: flex; }
+  .actions button:hover { color: var(--accent); }
+  .pickup-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+  .pickup-card { background: white; border: 1px solid #e6e6e8; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+  .pickup-strip { height: 5px; }
+  .pickup-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .pickup-body h4 { margin: 0; font-size: 14px; line-height: 1.5; font-weight: 700; color: #1c1c1c; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .pickup-body p { margin: 0; font-size: 12px; line-height: 1.6; color: #666; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .pickup-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; padding-top: 6px; font-size: 10.5px; color: #999; }
+  .dense-list { display: flex; flex-direction: column; background: white; border: 1px solid #e6e6e8; border-radius: 14px; padding: 4px 18px; }
+  .dense-row { display: flex; align-items: center; gap: 14px; padding: 13px 0; border-bottom: 1px solid #efeff1; }
+  .dense-row:last-child { border-bottom: none; }
+  .dense-bar { width: 3px; align-self: stretch; border-radius: 2px; flex-shrink: 0; }
+  .dense-cat { font-size: 11px; font-weight: 700; letter-spacing: 0.03em; width: 100px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mode-toggle { display: flex; background: #ececef; border-radius: 10px; padding: 3px; gap: 2px; }
+  .mode-toggle button { flex: 1; border: none; background: transparent; color: #777; font-weight: 500; font-size: 13px; padding: 9px 6px; border-radius: 8px; }
+  .mode-toggle button.active { background: white; color: #222; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+  .cat-check-row { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 8px; font-size: 13.5px; color: #555; }
+  .cat-check-row.checked { background: rgba(70,66,160,0.08); color: #222; font-weight: 700; }
+  .checkbox { width: 17px; height: 17px; border-radius: 5px; border: 1.5px solid #d5d5d8; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .checkbox.checked { background: var(--accent); border-color: var(--accent); }
+  .my-cat-header { display: flex; align-items: center; justify-content: space-between; padding: 0 2px; font-size: 12px; font-weight: 700; color: #666; }
+  .my-cat-count { color: var(--accent); }
+  .dense-title { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 500; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dense-date { font-size: 11.5px; color: #999; flex-shrink: 0; width: 60px; text-align: right; }
+  .empty { color: #999; font-size: 13px; padding: 40px 0; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="logo-row">
+      <div class="logo-mark">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 12a8 8 0 0 1 13-6"/><polyline points="17 2 17 6 13 6"/>
+          <path d="M20 12a8 8 0 0 1-13 6"/><polyline points="7 22 7 18 11 18"/>
+        </svg>
+      </div>
+      <div class="logo-text"><b>SKグループ</b><span>業界情報ポータル(ローカル版)</span></div>
+    </div>
+    <div class="mode-toggle" id="modeToggle">
+      <button data-mode="all">すべての情報をみる</button>
+      <button data-mode="mine">じぶんの情報をみる</button>
+    </div>
+    <div class="cat-list" id="catList"></div>
+  </div>
+
+  <div class="main">
+    <div class="main-inner">
+      <div class="search-row">
+        <div class="search-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/></svg>
+          <input id="searchInput" type="text" placeholder="キーワードで検索(タイトル・要約)">
+        </div>
+      </div>
+      <div class="status-line" id="statusLine">読み込み中...</div>
+      <div id="feed"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CATEGORIES = ["行政・法改正","企業の取り組み","リサイクル","産廃・処理業","資源相場","AI・DX","海外","電子マニフェスト","行政処分","事件・事故","業界動向"];
+const HUE = { "行政・法改正":250, "企業の取り組み":200, "リサイクル":165, "産廃・処理業":90, "資源相場":45, "AI・DX":290, "海外":320, "電子マニフェスト":230, "行政処分":15, "事件・事故":25, "業界動向":130 };
+
+let allItems = [];
+let activeCategory = null;
+let viewMode = localStorage.getItem("skinfo_viewMode") || "all";
+let myCategories = new Set(JSON.parse(localStorage.getItem("skinfo_myCategories") || "[]"));
+
+function catColor(cat, kind) {
+  const h = HUE[cat] ?? 250;
+  if (kind === "bg") return `oklch(91% 0.05 ${h})`;
+  if (kind === "text") return `oklch(38% 0.13 ${h})`;
+  return `oklch(60% 0.14 ${h})`; // bar
+}
+
+function primaryCategory(item) {
+  return (item.categories && item.categories[0]) || "業界動向";
+}
+
+function formatDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return `${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function escapeHtml(s) {
+  return (s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+async function loadItems() {
+  const res = await fetch("/api/items");
+  allItems = await res.json();
+  allItems.sort((a, b) => new Date(b.publishedAt || b.collectedAt) - new Date(a.publishedAt || a.collectedAt));
+  renderSidebar();
+  renderFeed();
+}
+
+function renderModeToggle() {
+  document.querySelectorAll("#modeToggle button").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.mode === viewMode);
+  });
+}
+
+function renderSidebar() {
+  renderModeToggle();
+  const counts = {};
+  for (const item of allItems) {
+    for (const c of item.categories || []) counts[c] = (counts[c] || 0) + 1;
+  }
+  const catList = document.getElementById("catList");
+
+  if (viewMode === "mine") {
+    const rows = [
+      `<div class="my-cat-header"><span>表示するカテゴリ</span><span class="my-cat-count">${myCategories.size}件選択中</span></div>`
+    ];
+    for (const cat of CATEGORIES) {
+      const checked = myCategories.has(cat);
+      rows.push(`
+        <div class="cat-check-row ${checked ? "checked" : ""}" data-cat="${cat}">
+          <span class="checkbox ${checked ? "checked" : ""}">${checked ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ""}</span>
+          <span>${cat}</span>
+        </div>`);
+    }
+    catList.innerHTML = rows.join("");
+    catList.querySelectorAll(".cat-check-row").forEach((row) => {
+      row.addEventListener("click", () => {
+        const cat = row.dataset.cat;
+        if (myCategories.has(cat)) myCategories.delete(cat); else myCategories.add(cat);
+        localStorage.setItem("skinfo_myCategories", JSON.stringify([...myCategories]));
+        renderSidebar();
+        renderFeed();
+      });
+    });
+    return;
+  }
+
+  const rows = [`<button class="cat-row ${activeCategory === null ? "active" : ""}" data-cat="">すべて<span class="count">${allItems.length}</span></button>`];
+  for (const cat of CATEGORIES) {
+    rows.push(`<button class="cat-row ${activeCategory === cat ? "active" : ""}" data-cat="${cat}">${cat}<span class="count">${counts[cat] || 0}</span></button>`);
+  }
+  catList.innerHTML = rows.join("");
+  catList.querySelectorAll(".cat-row").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      activeCategory = btn.dataset.cat || null;
+      renderSidebar();
+      renderFeed();
+    });
+  });
+}
+
+function matchesFilters(item, query) {
+  if (viewMode === "mine") {
+    if (myCategories.size === 0) return false;
+    if (!(item.categories || []).some((c) => myCategories.has(c))) return false;
+  } else if (activeCategory && !(item.categories || []).includes(activeCategory)) {
+    return false;
+  }
+  if (!query) return true;
+  const haystack = `${item.title} ${item.summary}`.toLowerCase();
+  return haystack.includes(query.toLowerCase());
+}
+
+function reactionButtons(id) {
+  return `
+    <div class="actions">
+      <button data-id="${id}" data-judgement="want" title="使える">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3z"/><path d="M7 11l3.5-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 1.9 2.6l-1.8 6A2 2 0 0 1 16.2 20H9a2 2 0 0 1-2-2"/></svg>
+      </button>
+      <button data-id="${id}" data-judgement="not_want" title="不要">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="transform:scaleY(-1)"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3z"/><path d="M7 11l3.5-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 1.9 2.6l-1.8 6A2 2 0 0 1 16.2 20H9a2 2 0 0 1-2-2"/></svg>
+      </button>
+    </div>`;
+}
+
+function renderFeed() {
+  const query = document.getElementById("searchInput").value.trim();
+  const filtered = allItems.filter((item) => matchesFilters(item, query));
+  const modeLabel = viewMode === "mine" ? "じぶんの情報" : (activeCategory ? "カテゴリ: " + activeCategory : "すべての情報");
+  document.getElementById("statusLine").textContent = `${filtered.length}件 ／ ${modeLabel}`;
+
+  const feed = document.getElementById("feed");
+  if (filtered.length === 0) {
+    const message = viewMode === "mine" && myCategories.size === 0
+      ? "サイドバーでカテゴリを選択してください"
+      : "該当する記事がありません";
+    feed.innerHTML = `<div class="empty">${message}</div>`;
+    return;
+  }
+
+  const hero = filtered[0];
+  const pickups = filtered.slice(1, 7);
+  const rest = filtered.slice(7);
+
+  const heroCat = primaryCategory(hero);
+  let html = `
+    <div style="display:flex; flex-direction:column; gap:16px; margin-bottom:30px;">
+      <div class="section-head"><span><span class="num">01</span><h2>注目</h2></span></div>
+      <div class="hero">
+        <div class="hero-icon" style="background:${catColor(heroCat, "bg")};">
+          <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="${catColor(heroCat, "text")}" stroke-width="1.6"><rect x="5" y="3" width="14" height="18" rx="1.5"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        </div>
+        <div class="hero-body">
+          <span class="kicker" style="color:${catColor(heroCat, "text")}">${heroCat}</span>
+          <h3>${escapeHtml(hero.title)}</h3>
+          <p>${escapeHtml(hero.summary)}</p>
+          <div class="meta-row">
+            <span class="meta-text">${escapeHtml(hero.sourceName)}${hero.isPrimarySource ? "・一次情報" : ""} ／ ${formatDate(hero.publishedAt) || formatDate(hero.collectedAt)}</span>
+            <div class="actions">
+              <a href="${hero.sourceUrl}" target="_blank" style="font-size:12.5px; font-weight:700;">元記事を見る →</a>
+              ${reactionButtons(hero.id)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  if (pickups.length > 0) {
+    html += `
+    <div style="display:flex; flex-direction:column; gap:16px; margin-bottom:30px;">
+      <div class="section-head"><span><span class="num">02</span><h2>ピックアップ</h2></span></div>
+      <div class="pickup-grid">
+        ${pickups.map((item) => {
+          const cat = primaryCategory(item);
+          return `
+          <div class="pickup-card">
+            <div class="pickup-strip" style="background:${catColor(cat, "bar")}"></div>
+            <div class="pickup-body">
+              <span class="kicker" style="font-size:11px; color:${catColor(cat, "text")}">${cat}</span>
+              <h4>${escapeHtml(item.title)}</h4>
+              <p>${escapeHtml(item.summary)}</p>
+              <span style="font-size:11px; color:#999;">${escapeHtml(item.sourceName)} ／ ${formatDate(item.publishedAt) || formatDate(item.collectedAt)}</span>
+              <div class="pickup-foot">
+                <a href="${item.sourceUrl}" target="_blank" style="font-weight:700;">元記事 →</a>
+                ${reactionButtons(item.id)}
+              </div>
+            </div>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>`;
+  }
+
+  if (rest.length > 0) {
+    html += `
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div class="section-head"><span><span class="num">03</span><h2>新着一覧</h2></span></div>
+      <div class="dense-list">
+        ${rest.map((item) => {
+          const cat = primaryCategory(item);
+          return `
+          <div class="dense-row">
+            <div class="dense-bar" style="background:${catColor(cat, "bar")}"></div>
+            <span class="dense-cat" style="color:${catColor(cat, "text")}">${cat}</span>
+            <a class="dense-title" href="${item.sourceUrl}" target="_blank" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</a>
+            <span class="dense-date">${formatDate(item.publishedAt) || formatDate(item.collectedAt)}</span>
+            ${reactionButtons(item.id)}
+          </div>`;
+        }).join("")}
+      </div>
+    </div>`;
+  }
+
+  feed.innerHTML = html;
+
+  feed.querySelectorAll("[data-judgement]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      const judgement = btn.dataset.judgement;
+      btn.style.color = "#4642A0";
+      await fetch(`/api/items/${id}/reaction`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ judgement })
+      });
+    });
+  });
+}
+
+document.getElementById("searchInput").addEventListener("input", renderFeed);
+
+document.querySelectorAll("#modeToggle button").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    viewMode = btn.dataset.mode;
+    localStorage.setItem("skinfo_viewMode", viewMode);
+    renderSidebar();
+    renderFeed();
+  });
+});
+
+loadItems();
+</script>
+</body>
+</html>
