@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import { ingestItem } from "../../pipeline/ingest.js";
 import { isRelevantTopic } from "../../config/categoryRules.js";
+import { fetchArticleText } from "../../lib/articleFetcher.js";
 
 export const SOURCE_ID = "sendai-city";
 export const SOURCE_NAME = "仙台市";
@@ -59,9 +60,10 @@ export async function collectSendai() {
 
   const results = [];
   for (const item of relevant) {
+    const pageText = await fetchArticleText(item.url);
     const result = await ingestItem({
       title: item.title,
-      rawText: item.title,
+      rawText: pageText ? `${item.title}\n\n${pageText}` : item.title,
       sourceUrl: item.url,
       sourceId: SOURCE_ID,
       sourceName: SOURCE_NAME,

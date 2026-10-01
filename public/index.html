@@ -69,6 +69,18 @@
   .dense-title { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 500; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .dense-date { font-size: 11.5px; color: #999; flex-shrink: 0; width: 60px; text-align: right; }
   .empty { color: #999; font-size: 13px; padding: 40px 0; text-align: center; }
+  .clickable { cursor: pointer; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
+  .modal-overlay.hidden { display: none; }
+  .modal-box { background: white; border-radius: 16px; max-width: 620px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 28px 30px; position: relative; }
+  .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: #999; padding: 6px; }
+  .modal-close:hover { color: var(--accent); }
+  .modal-kicker { font-size: 12px; font-weight: 700; }
+  .modal-box h3 { margin: 10px 0 14px; font-size: 20px; line-height: 1.5; }
+  .modal-box p { font-size: 14.5px; line-height: 1.9; color: #333; white-space: pre-wrap; }
+  .modal-meta { font-size: 12px; color: #888; margin-top: 18px; padding-top: 14px; border-top: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .modal-source-link { font-size: 13px; font-weight: 700; color: var(--accent); border: 1.5px solid var(--accent); border-radius: 8px; padding: 8px 16px; white-space: nowrap; }
+  .modal-source-link:hover { background: var(--accent); color: white; }
 </style>
 </head>
 <body>
@@ -101,6 +113,21 @@
       </div>
       <div class="status-line" id="statusLine">読み込み中...</div>
       <div id="feed"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal-box">
+    <button class="modal-close" id="modalClose" aria-label="閉じる">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <span class="modal-kicker" id="modalKicker"></span>
+    <h3 id="modalTitle"></h3>
+    <p id="modalSummary"></p>
+    <div class="modal-meta">
+      <span id="modalMeta"></span>
+      <a class="modal-source-link" id="modalSourceLink" href="#" target="_blank" rel="noopener">元記事を見る →</a>
     </div>
   </div>
 </div>
@@ -249,8 +276,10 @@ function renderFeed() {
         </div>
         <div class="hero-body">
           <span class="kicker" style="color:${catColor(heroCat, "text")}">${heroCat}</span>
-          <h3>${escapeHtml(hero.title)}</h3>
-          <p>${escapeHtml(hero.summary)}</p>
+          <div class="clickable" data-detail-id="${hero.id}">
+            <h3>${escapeHtml(hero.title)}</h3>
+            <p>${escapeHtml(hero.summary)}</p>
+          </div>
           <div class="meta-row">
             <span class="meta-text">${escapeHtml(hero.sourceName)}${hero.isPrimarySource ? "・一次情報" : ""} ／ ${formatDate(hero.publishedAt) || formatDate(hero.collectedAt)}</span>
             <div class="actions">
@@ -274,8 +303,10 @@ function renderFeed() {
             <div class="pickup-strip" style="background:${catColor(cat, "bar")}"></div>
             <div class="pickup-body">
               <span class="kicker" style="font-size:11px; color:${catColor(cat, "text")}">${cat}</span>
-              <h4>${escapeHtml(item.title)}</h4>
-              <p>${escapeHtml(item.summary)}</p>
+              <div class="clickable" data-detail-id="${item.id}">
+                <h4>${escapeHtml(item.title)}</h4>
+                <p>${escapeHtml(item.summary)}</p>
+              </div>
               <span style="font-size:11px; color:#999;">${escapeHtml(item.sourceName)} ／ ${formatDate(item.publishedAt) || formatDate(item.collectedAt)}</span>
               <div class="pickup-foot">
                 <a href="${item.sourceUrl}" target="_blank" style="font-weight:700;">元記事 →</a>
@@ -299,7 +330,7 @@ function renderFeed() {
           <div class="dense-row">
             <div class="dense-bar" style="background:${catColor(cat, "bar")}"></div>
             <span class="dense-cat" style="color:${catColor(cat, "text")}">${cat}</span>
-            <a class="dense-title" href="${item.sourceUrl}" target="_blank" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</a>
+            <span class="dense-title clickable" data-detail-id="${item.id}" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</span>
             <span class="dense-date">${formatDate(item.publishedAt) || formatDate(item.collectedAt)}</span>
             ${reactionButtons(item.id)}
           </div>`;
@@ -309,6 +340,10 @@ function renderFeed() {
   }
 
   feed.innerHTML = html;
+
+  feed.querySelectorAll("[data-detail-id]").forEach((el) => {
+    el.addEventListener("click", () => openDetail(el.dataset.detailId));
+  });
 
   feed.querySelectorAll("[data-judgement]").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -323,6 +358,32 @@ function renderFeed() {
     });
   });
 }
+
+function openDetail(id) {
+  const item = allItems.find((i) => i.id === id);
+  if (!item) return;
+  const cat = primaryCategory(item);
+  document.getElementById("modalKicker").textContent = cat;
+  document.getElementById("modalKicker").style.color = catColor(cat, "text");
+  document.getElementById("modalTitle").textContent = item.title;
+  document.getElementById("modalSummary").textContent = item.summary;
+  document.getElementById("modalMeta").textContent =
+    `${item.sourceName}${item.isPrimarySource ? "・一次情報" : ""} ／ ${formatDate(item.publishedAt) || formatDate(item.collectedAt)}`;
+  document.getElementById("modalSourceLink").href = item.sourceUrl;
+  document.getElementById("modalOverlay").classList.remove("hidden");
+}
+
+function closeDetail() {
+  document.getElementById("modalOverlay").classList.add("hidden");
+}
+
+document.getElementById("modalClose").addEventListener("click", closeDetail);
+document.getElementById("modalOverlay").addEventListener("click", (e) => {
+  if (e.target.id === "modalOverlay") closeDetail();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeDetail();
+});
 
 document.getElementById("searchInput").addEventListener("input", renderFeed);
 

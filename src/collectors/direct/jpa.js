@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { ingestItem } from "../../pipeline/ingest.js";
+import { fetchArticleText } from "../../lib/articleFetcher.js";
 
 export const SOURCE_ID = "jpa";
 export const SOURCE_NAME = "日本製紙連合会";
@@ -54,10 +55,10 @@ export async function collectJpa() {
 
   const results = [];
   for (const item of newsItems) {
+    const pageText = await fetchArticleText(item.url);
     const result = await ingestItem({
       title: item.title,
-      // 本文はここでは取得しておらず、タイトルを本文代わりに渡している(prpc.jsと同様の暫定対応)。
-      rawText: item.title,
+      rawText: pageText ? `${item.title}\n\n${pageText}` : item.title,
       sourceUrl: item.url,
       sourceId: SOURCE_ID,
       sourceName: SOURCE_NAME,

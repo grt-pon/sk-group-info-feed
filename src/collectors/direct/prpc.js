@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { ingestItem } from "../../pipeline/ingest.js";
+import { fetchArticleText } from "../../lib/articleFetcher.js";
 
 export const SOURCE_ID = "prpc";
 export const SOURCE_NAME = "古紙再生促進センター";
@@ -68,11 +69,11 @@ export async function collectPrpc(options = {}) {
 
   const results = [];
   for (const item of newsItems) {
+    // リンク先(外部サイトの場合も含む)の本文を取得して要約精度を上げる。取得できない場合はタイトルのみ。
+    const pageText = await fetchArticleText(item.url);
     const result = await ingestItem({
       title: item.title,
-      // サイト自体には本文がなく、外部(PR-TIMES等)や別ページへのリンクのみのため、
-      // 現時点ではタイトルを本文代わりに渡している。要約精度を上げるにはリンク先の本文取得が今後の課題。
-      rawText: item.title,
+      rawText: pageText ? `${item.title}\n\n${pageText}` : item.title,
       sourceUrl: item.url,
       sourceId: SOURCE_ID,
       sourceName: SOURCE_NAME,

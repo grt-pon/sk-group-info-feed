@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { ingestItem } from "../../pipeline/ingest.js";
+import { fetchArticleText } from "../../lib/articleFetcher.js";
 
 export const SOURCE_ID = "meti";
 export const SOURCE_NAME = "経済産業省(資源循環経済小委員会)";
@@ -60,10 +61,12 @@ export async function collectMeti() {
 
   const results = [];
   for (const item of meetings) {
+    // 開催回ページ(配布資料一覧)の本文も読ませ、議題名だけでなく何が議論されたかまで要約させる。
+    const pageText = await fetchArticleText(item.url);
+    const fallbackText = `経済産業省の産業構造審議会 資源循環経済小委員会が「${item.title}」を開催した(開催案内・配布資料のページが公開された)。`;
     const result = await ingestItem({
       title: `産業構造審議会 資源循環経済小委員会 ${item.title}`,
-      // 本文(議事録・配布資料PDF)までは取得しておらず、開催回のタイトルのみを渡している。
-      rawText: `経済産業省の産業構造審議会 資源循環経済小委員会が「${item.title}」を開催した(開催案内・配布資料のページが公開された)。`,
+      rawText: pageText ? `産業構造審議会 資源循環経済小委員会 ${item.title}\n\n${pageText}` : fallbackText,
       sourceUrl: item.url,
       sourceId: SOURCE_ID,
       sourceName: SOURCE_NAME,

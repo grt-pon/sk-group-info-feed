@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { ingestItem } from "../../pipeline/ingest.js";
+import { fetchArticleText } from "../../lib/articleFetcher.js";
 
 export const SOURCE_ID = "env-recycle";
 export const SOURCE_NAME = "環境省(資源循環関連報道発表)";
@@ -58,10 +59,12 @@ export async function collectEnv() {
 
   const results = [];
   for (const item of items) {
+    // リンク先(発表資料ページ)の本文を取得し、タイトルだけでは分からない開催内容・配布資料の
+    // 中身までClaudeが要約できるようにする。取得できない場合(PDF等)はタイトルのみにフォールバックする。
+    const pageText = await fetchArticleText(item.url);
     const result = await ingestItem({
       title: item.title,
-      // 本文はここでは取得しておらず、タイトルを本文代わりに渡している(prpc.js等と同様の暫定対応)。
-      rawText: item.title,
+      rawText: pageText ? `${item.title}\n\n${pageText}` : item.title,
       sourceUrl: item.url,
       sourceId: SOURCE_ID,
       sourceName: SOURCE_NAME,
