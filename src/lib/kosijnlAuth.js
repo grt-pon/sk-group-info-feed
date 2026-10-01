@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 const LOGIN_URL = "https://kosijnl.co.jp/kosijnl_wp/wp-login.php";
 
 /**

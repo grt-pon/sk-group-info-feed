@@ -62,7 +62,8 @@ async function fetchLatestIssueArticles(cookie) {
     const href = $a.attr("href");
     const idMatch = href && href.match(/backnumber\/(\d+)\.html/);
     if (!idMatch) return;
-    const title = cleanText($, $a.find("h3.key-icon").first());
+    // ログイン前後でh3のclass(key-icon・鍵アイコン)有無が変わるため、class指定せずh3で拾う。
+    const title = cleanText($, $a.find("h3").first());
     const publishedAt = parseJapaneseDate($linkCover.prev("div.meta-info").find(".mata-date").text());
     if (title) {
       items.push({ id: idMatch[1], title, publishedAt });
