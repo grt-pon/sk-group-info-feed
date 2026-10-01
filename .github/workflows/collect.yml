@@ -20,3 +20,5 @@ jobs:
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          KOSIJNL_USERNAME: ${{ secrets.KOSIJNL_USERNAME }}
+          KOSIJNL_PASSWORD: ${{ secrets.KOSIJNL_PASSWORD }}

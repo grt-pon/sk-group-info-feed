@@ -10,6 +10,7 @@ import { collectEnv } from "../src/collectors/direct/env.js";
 import { collectMiyagi } from "../src/collectors/direct/miyagi.js";
 import { collectSendai } from "../src/collectors/direct/sendai.js";
 import { collectNikkeiLocalTohoku } from "../src/collectors/keyword/nikkeiLocal.js";
+import { collectKosijnl } from "../src/collectors/direct/kosijnl.js";
 
 // 未実装のものも並べておき、実装が進んだらここに手を加えずそのまま動くようにする。
 const COLLECTORS = [
@@ -22,6 +23,7 @@ const COLLECTORS = [
   { name: "全国製紙原料商工組合連合会", run: collectZengenren },
   { name: "一般キーワード監視(Tavily)", run: collectByKeywordWatch },
   { name: "循環経済新聞", run: collectJunkanKeizaiShimbun },
+  { name: "古紙ジャーナル", run: collectKosijnl },
   { name: "宮城県", run: collectMiyagi },
   { name: "仙台市", run: collectSendai },
   { name: "日経地域面(東北)", run: collectNikkeiLocalTohoku }
