@@ -1,6 +1,7 @@
 import { searchRecent } from "../../lib/tavilyClient.js";
 import { ingestItem } from "../../pipeline/ingest.js";
 import { isLikelyDisposalGuide } from "../../config/categoryRules.js";
+import { fetchPublishedDate } from "../../lib/articleFetcher.js";
 
 const SOURCE_ID = "general-keyword-watch";
 const SOURCE_NAME = "一般キーワード監視(Tavily)";
@@ -34,6 +35,8 @@ export async function collectByKeywordWatch() {
         results.push({ title: article.title, skipped: true, reason: "disposal_guide_noise" });
         continue;
       }
+      // Tavilyが公開日を返さないことが多いため、リンク先ページ自体のmeta情報からも探す。
+      const publishedAt = article.publishedDate || (await fetchPublishedDate(article.url));
       const result = await ingestItem({
         title: article.title,
         rawText: article.content,
@@ -41,7 +44,7 @@ export async function collectByKeywordWatch() {
         sourceId: SOURCE_ID,
         sourceName: SOURCE_NAME,
         isPrimarySource: false,
-        publishedAt: article.publishedDate
+        publishedAt
       });
       results.push({ title: article.title, ...result });
     }
