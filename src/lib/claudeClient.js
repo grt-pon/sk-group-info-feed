@@ -33,22 +33,28 @@ function getClient() {
  * 化けている・分かりにくい場合は本文から自然なタイトルを作り直す。
  *
  * @param {{ title: string, rawText: string, ruleCategories: string[] }} input
- * @returns {Promise<{ title: string, summary: string, categories: string[] }>}
+ * @returns {Promise<{ title: string, summary: string, categories: string[], isNewsworthy: boolean }>}
  */
 export async function summarizeAndClassify({ title, rawText, ruleCategories }) {
   const anthropic = getClient();
 
   const prompt = `あなたは古紙・廃棄物業界の社内情報ポータル向けに記事を要約するアシスタントです。
-以下の記事を読み、次の3つを日本語で出力してください。
+以下の記事を読み、次の4つを日本語で出力してください。
 
 1. タイトル(記事内容を表す自然な日本語の見出し。元のタイトルが文字化けしている・意味不明・英語や記号だらけで内容が分からない場合は、本文から新しく作り直す。元のタイトルが正常に読めて内容も適切に表しているなら、それをそのまま使ってよい)
 2. 要約(2〜3文、「発表内容→背景→影響」の順で簡潔に。元文の言い回しをそのまま使わず、自分の言葉で書く)
 3. カテゴリ(次の11個から、内容に合うものを1〜2個選ぶ): ${CATEGORIES.join("、")}
+4. ニュース価値の有無(isNewsworthy: true/false)。以下に該当する場合はfalseにする:
+   - 「○○統計を更新しました」「需給速報を更新」のように、定例の統計・資料ページが更新されたという事実だけで、
+     具体的な数値・変化・トレンドなど読者が持ち帰れる情報が本文中にない場合
+   - 単なる会議・資料公開の告知で、何が話し合われた・決まったのかが本文からも分からない場合
+   具体的な数値や、何が起きた/決まった/変化したかが分かる内容であればtrueにする。
+   (統計の更新であっても、本文に「回収率が81.3%になった」のような具体的な中身があればtrueでよい)
 
 キーワードルールによる一次判定では ${ruleCategories.length > 0 ? ruleCategories.join("、") : "該当なし"} が候補になっています。この候補を参考にしつつ、実際の内容に照らして最終的なカテゴリを判断してください(候補と異なってもよい)。
 
 出力は必ず次のJSON形式のみで返してください(説明文や前置きは不要):
-{"title": "...", "summary": "...", "categories": ["..."]}
+{"title": "...", "summary": "...", "categories": ["..."], "isNewsworthy": true}
 
 ---
 元のタイトル: ${title}
@@ -74,7 +80,8 @@ ${rawText}
     return {
       title: parsed.title || title,
       summary: parsed.summary,
-      categories: Array.isArray(parsed.categories) ? parsed.categories : []
+      categories: Array.isArray(parsed.categories) ? parsed.categories : [],
+      isNewsworthy: parsed.isNewsworthy !== false
     };
   } catch (err) {
     throw new Error(`Claudeの出力をJSONとして解釈できませんでした: ${text}`);

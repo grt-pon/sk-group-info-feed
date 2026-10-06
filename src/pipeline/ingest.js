@@ -26,7 +26,15 @@ export async function ingestItem(rawItem) {
   }
 
   const ruleCategories = matchCategoriesByRule(`${title}\n${rawText}`);
-  const { title: cleanTitle, summary, categories } = await summarizeAndClassify({ title, rawText, ruleCategories });
+  const { title: cleanTitle, summary, categories, isNewsworthy } = await summarizeAndClassify({
+    title,
+    rawText,
+    ruleCategories
+  });
+
+  if (!isNewsworthy) {
+    return { skipped: true, reason: "not_newsworthy" };
+  }
 
   const itemId = await saveItem({
     title: cleanTitle,
