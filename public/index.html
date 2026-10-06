@@ -168,7 +168,12 @@ function escapeHtml(s) {
 async function loadItems() {
   const res = await fetch("/api/items");
   allItems = await res.json();
-  allItems.sort((a, b) => new Date(b.publishedAt || b.collectedAt) - new Date(a.publishedAt || a.collectedAt));
+  // 発表日(publishedAt)基準で新しい順に並べる。発表日が不明な記事は(収集日ではなく)末尾に回す。
+  allItems.sort((a, b) => {
+    const aTime = a.publishedAt ? new Date(a.publishedAt).getTime() : -Infinity;
+    const bTime = b.publishedAt ? new Date(b.publishedAt).getTime() : -Infinity;
+    return bTime - aTime;
+  });
   renderSidebar();
   renderFeed();
 }
@@ -284,7 +289,7 @@ function renderFeed() {
             <p>${escapeHtml(hero.summary)}</p>
           </div>
           <div class="meta-row">
-            <span class="meta-text">${escapeHtml(hero.sourceName)}${hero.isPrimarySource ? "・一次情報" : ""} ／ ${formatDate(hero.publishedAt) || formatDate(hero.collectedAt)}</span>
+            <span class="meta-text">${escapeHtml(hero.sourceName)}${hero.isPrimarySource ? "・一次情報" : ""} ／ ${formatDate(hero.publishedAt) || "日付不明"}</span>
             <div class="actions">
               <a href="${hero.sourceUrl}" target="_blank" style="font-size:12.5px; font-weight:700;">元記事を見る →</a>
               ${reactionButtons(hero.id)}
@@ -310,7 +315,7 @@ function renderFeed() {
                 <h4>${escapeHtml(item.title)}</h4>
                 <p>${escapeHtml(item.summary)}</p>
               </div>
-              <span style="font-size:11px; color:#999;">${escapeHtml(item.sourceName)} ／ ${formatDate(item.publishedAt) || formatDate(item.collectedAt)}</span>
+              <span style="font-size:11px; color:#999;">${escapeHtml(item.sourceName)} ／ ${formatDate(item.publishedAt) || "日付不明"}</span>
               <div class="pickup-foot">
                 <a href="${item.sourceUrl}" target="_blank" style="font-weight:700;">元記事 →</a>
                 ${reactionButtons(item.id)}
@@ -336,7 +341,7 @@ function renderFeed() {
               <span class="news-cat" style="color:${catColor(cat, "text")}">${cat}</span>
               <p class="news-title">${escapeHtml(item.title)}</p>
               <p class="news-summary">${escapeHtml(item.summary)}</p>
-              <div class="news-meta"><span>${escapeHtml(item.sourceName)}</span><span>${formatDate(item.publishedAt) || formatDate(item.collectedAt)}</span></div>
+              <div class="news-meta"><span>${escapeHtml(item.sourceName)}</span><span>${formatDate(item.publishedAt) || "日付不明"}</span></div>
             </div>
             <div class="news-side">${reactionButtons(item.id)}</div>
           </div>`;
@@ -374,7 +379,7 @@ function openDetail(id) {
   document.getElementById("modalTitle").textContent = item.title;
   document.getElementById("modalSummary").textContent = item.summary;
   document.getElementById("modalMeta").textContent =
-    `${item.sourceName}${item.isPrimarySource ? "・一次情報" : ""} ／ ${formatDate(item.publishedAt) || formatDate(item.collectedAt)}`;
+    `${item.sourceName}${item.isPrimarySource ? "・一次情報" : ""} ／ ${formatDate(item.publishedAt) || "日付不明"}`;
   document.getElementById("modalSourceLink").href = item.sourceUrl;
   document.getElementById("modalOverlay").classList.remove("hidden");
 }
