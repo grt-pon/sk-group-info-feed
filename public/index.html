@@ -103,9 +103,11 @@
   .fb-reply { margin: 8px 0 0 16px; padding: 8px 10px; background: #f8f8fa; border-radius: 8px; }
   .fb-reply-meta { font-size: 11px; color: #999; margin-bottom: 2px; }
   .fb-reply-content { font-size: 12.5px; line-height: 1.6; color: #444; white-space: pre-wrap; }
-  .fb-reply-form { display: flex; gap: 6px; margin-top: 8px; margin-left: 16px; }
-  .fb-reply-form input { flex: 1; font: inherit; font-size: 12.5px; border: 1px solid #ddd; border-radius: 6px; padding: 7px 10px; }
-  .fb-reply-form button { background: #ececef; color: #555; border: none; border-radius: 6px; padding: 7px 12px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .fb-reply-form { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; margin-left: 16px; }
+  .fb-reply-form input { font: inherit; font-size: 12.5px; border: 1px solid #ddd; border-radius: 6px; padding: 7px 10px; }
+  .fb-reply-form .r-content { flex: 1 1 100%; }
+  .fb-reply-form .r-dept, .fb-reply-form .r-name, .fb-reply-form .r-password { flex: 1 1 110px; }
+  .fb-reply-form button { flex: 0 0 auto; background: #ececef; color: #555; border: none; border-radius: 6px; padding: 7px 12px; font-size: 12px; font-weight: 700; white-space: nowrap; }
   .fb-reply-form button:hover { background: var(--accent); color: white; }
   .fb-empty { font-size: 12.5px; color: #999; padding: 8px 0; }
   .cl-item { padding: 12px 0; border-bottom: 1px solid #efeff1; }
@@ -546,11 +548,14 @@ function renderFeedbackList(items) {
     list.innerHTML = `<div class="fb-empty">まだ投稿がありません</div>`;
     return;
   }
+  const savedDept = localStorage.getItem("skinfo_replyDept") || "";
+  const savedName = localStorage.getItem("skinfo_replyName") || "";
+
   list.innerHTML = items.map((item) => {
     const who = [item.department, item.name].filter(Boolean).join(" / ") || "匿名";
     const repliesHtml = (item.replies || []).map((r) => `
       <div class="fb-reply">
-        <div class="fb-reply-meta">${escapeHtml(r.author)} ・ ${formatDate(r.createdAt)}</div>
+        <div class="fb-reply-meta">${escapeHtml([r.department, r.name].filter(Boolean).join(" / ") || "担当者")} ・ ${formatDate(r.createdAt)}</div>
         <div class="fb-reply-content">${escapeHtml(r.content)}</div>
       </div>`).join("");
     return `
@@ -559,7 +564,10 @@ function renderFeedbackList(items) {
         <div class="fb-item-content">${escapeHtml(item.content)}</div>
         ${repliesHtml}
         <form class="fb-reply-form" data-reply-id="${item.id}">
-          <input type="text" placeholder="返信する" maxlength="500">
+          <input type="text" class="r-dept" placeholder="部署" maxlength="100" value="${escapeHtml(savedDept)}">
+          <input type="text" class="r-name" placeholder="名前" maxlength="100" value="${escapeHtml(savedName)}">
+          <input type="text" class="r-content" placeholder="返信内容(例: ○○を修正し、使い方を改善しました)" maxlength="1000">
+          <input type="password" class="r-password" placeholder="合言葉">
           <button type="submit">返信</button>
         </form>
       </div>`;
@@ -568,8 +576,10 @@ function renderFeedbackList(items) {
   list.querySelectorAll(".fb-reply-form").forEach((form) => {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const input = form.querySelector("input");
-      const content = input.value.trim();
+      const department = form.querySelector(".r-dept").value.trim();
+      const name = form.querySelector(".r-name").value.trim();
+      const content = form.querySelector(".r-content").value.trim();
+      const password = form.querySelector(".r-password").value;
       if (!content) return;
       const btn = form.querySelector("button");
       btn.disabled = true;
@@ -577,9 +587,11 @@ function renderFeedbackList(items) {
         const res = await fetch(`/api/feedback/${form.dataset.replyId}/reply`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content })
+          body: JSON.stringify({ department, name, content, password })
         });
         if (!res.ok) throw new Error((await res.json()).error || "返信に失敗しました");
+        localStorage.setItem("skinfo_replyDept", department);
+        localStorage.setItem("skinfo_replyName", name);
         await loadFeedbackList();
       } catch (err) {
         alert(`返信に失敗しました: ${err.message}`);

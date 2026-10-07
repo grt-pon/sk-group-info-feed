@@ -80,15 +80,31 @@ export async function listFeedback() {
 }
 
 /**
- * フィードバックに対する返信を追加する(現時点では誰でも投稿可)。
- * @param {string} feedbackId
- * @param {{ author: string, content: string }} reply
+ * 返信用の合言葉(簡易パスワード)が一致するかを確認する。
+ * 本格的なログインではなく、FEEDBACK_REPLY_PASSWORD環境変数と一致するかだけを見る簡易的な歯止め。
+ * @param {string} password
+ * @returns {boolean}
  */
-export async function addFeedbackReply(feedbackId, { author, content }) {
+export function verifyReplyPassword(password) {
+  const expected = process.env.FEEDBACK_REPLY_PASSWORD;
+  return Boolean(expected) && password === expected;
+}
+
+/**
+ * フィードバックに対する返信を追加する。
+ * @param {string} feedbackId
+ * @param {{ department: string, name: string, content: string }} reply
+ */
+export async function addFeedbackReply(feedbackId, { department, name, content }) {
   if (!content || !content.trim()) {
     throw new Error("返信内容は必須です。");
   }
-  const reply = { author: author || "担当者", content: content.trim(), createdAt: new Date().toISOString() };
+  const reply = {
+    department: department || null,
+    name: name || null,
+    content: content.trim(),
+    createdAt: new Date().toISOString()
+  };
 
   if (process.env.SUPABASE_URL) {
     const supabase = getSupabase();

@@ -3,7 +3,7 @@ import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { addReaction, listItems } from "./lib/store.js";
-import { submitFeedback, listFeedback, addFeedbackReply } from "./lib/feedbackStore.js";
+import { submitFeedback, listFeedback, addFeedbackReply, verifyReplyPassword } from "./lib/feedbackStore.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, "..", "public");
@@ -61,11 +61,15 @@ app.get("/api/feedback", async (req, res) => {
   }
 });
 
-// フィードバックへの返信(現時点では誰でも投稿可)。
+// フィードバックへの返信。合言葉(FEEDBACK_REPLY_PASSWORD)が一致した場合のみ受け付ける簡易的な歯止め。
 app.post("/api/feedback/:id/reply", async (req, res) => {
-  const { author, content } = req.body ?? {};
+  const { department, name, content, password } = req.body ?? {};
+  if (!verifyReplyPassword(password)) {
+    res.status(401).json({ error: "合言葉が正しくありません。" });
+    return;
+  }
   try {
-    await addFeedbackReply(req.params.id, { author, content });
+    await addFeedbackReply(req.params.id, { department, name, content });
     res.json({ ok: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
