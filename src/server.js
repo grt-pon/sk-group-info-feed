@@ -3,7 +3,15 @@ import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { addReaction, listItems } from "./lib/store.js";
-import { submitFeedback, listFeedback, addFeedbackReply, verifyReplyPassword } from "./lib/feedbackStore.js";
+import {
+  submitFeedback,
+  listFeedback,
+  updateFeedback,
+  deleteFeedback,
+  addFeedbackReply,
+  updateFeedbackReply,
+  deleteFeedbackReply
+} from "./lib/feedbackStore.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, "..", "public");
@@ -61,15 +69,53 @@ app.get("/api/feedback", async (req, res) => {
   }
 });
 
-// フィードバックへの返信。合言葉(FEEDBACK_REPLY_PASSWORD)が一致した場合のみ受け付ける簡易的な歯止め。
-app.post("/api/feedback/:id/reply", async (req, res) => {
-  const { department, name, content, password } = req.body ?? {};
-  if (!verifyReplyPassword(password)) {
-    res.status(401).json({ error: "合言葉が正しくありません。" });
-    return;
+// フィードバック投稿そのものの編集。
+app.patch("/api/feedback/:id", async (req, res) => {
+  const { department, name, content } = req.body ?? {};
+  try {
+    await updateFeedback(req.params.id, { department, name, content });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
+});
+
+// フィードバック投稿の削除(返信ごと削除)。
+app.delete("/api/feedback/:id", async (req, res) => {
+  try {
+    await deleteFeedback(req.params.id);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// フィードバックへの返信。
+app.post("/api/feedback/:id/reply", async (req, res) => {
+  const { department, name, content } = req.body ?? {};
   try {
     await addFeedbackReply(req.params.id, { department, name, content });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 返信の編集。
+app.patch("/api/feedback/:id/reply/:replyId", async (req, res) => {
+  const { department, name, content } = req.body ?? {};
+  try {
+    await updateFeedbackReply(req.params.id, req.params.replyId, { department, name, content });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 返信の削除。
+app.delete("/api/feedback/:id/reply/:replyId", async (req, res) => {
+  try {
+    await deleteFeedbackReply(req.params.id, req.params.replyId);
     res.json({ ok: true });
   } catch (err) {
     res.status(400).json({ error: err.message });

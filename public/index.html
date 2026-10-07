@@ -91,6 +91,7 @@
 
   .form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
   .form-field label { font-size: 12.5px; font-weight: 700; color: #555; }
+  .field-hint { font-weight: 400; color: #aaa; font-size: 11px; }
   .form-field input, .form-field textarea { font: inherit; font-size: 14px; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; resize: vertical; }
   .form-submit { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 11px 20px; font-size: 14px; font-weight: 700; }
   .form-submit:hover { background: #38346f; }
@@ -98,17 +99,24 @@
   .fb-list-head { font-size: 12.5px; font-weight: 700; color: #666; margin: 22px 0 10px; padding-top: 16px; border-top: 1px solid #eee; }
   .fb-item { padding: 12px 0; border-bottom: 1px solid #efeff1; }
   .fb-item:last-child { border-bottom: none; }
-  .fb-item-meta { font-size: 11.5px; color: #999; margin-bottom: 4px; }
+  .fb-item-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11.5px; color: #999; margin-bottom: 4px; }
   .fb-item-content { font-size: 13.5px; line-height: 1.7; color: #333; white-space: pre-wrap; }
   .fb-reply { margin: 8px 0 0 16px; padding: 8px 10px; background: #f8f8fa; border-radius: 8px; }
-  .fb-reply-meta { font-size: 11px; color: #999; margin-bottom: 2px; }
+  .fb-reply-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: #999; margin-bottom: 2px; }
   .fb-reply-content { font-size: 12.5px; line-height: 1.6; color: #444; white-space: pre-wrap; }
-  .fb-reply-form { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; margin-left: 16px; }
-  .fb-reply-form input { font: inherit; font-size: 12.5px; border: 1px solid #ddd; border-radius: 6px; padding: 7px 10px; }
-  .fb-reply-form .r-content { flex: 1 1 100%; }
-  .fb-reply-form .r-dept, .fb-reply-form .r-name, .fb-reply-form .r-password { flex: 1 1 110px; }
-  .fb-reply-form button { flex: 0 0 auto; background: #ececef; color: #555; border: none; border-radius: 6px; padding: 7px 12px; font-size: 12px; font-weight: 700; white-space: nowrap; }
-  .fb-reply-form button:hover { background: var(--accent); color: white; }
+  .fb-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .fb-action-btn { background: none; border: none; font-size: 11px; color: #999; padding: 0; text-decoration: underline; }
+  .fb-action-btn:hover { color: var(--accent); }
+  .fb-action-btn.danger:hover { color: #c0392b; }
+  .fb-reply-toggle { margin: 8px 0 0 16px; background: none; border: 1px solid #ddd; border-radius: 6px; padding: 5px 12px; font-size: 12px; color: #666; }
+  .fb-reply-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .fb-reply-form, .fb-edit-form { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .fb-reply-form { margin-left: 16px; }
+  .fb-reply-form input, .fb-reply-form textarea, .fb-edit-form input, .fb-edit-form textarea { font: inherit; font-size: 12.5px; border: 1px solid #ddd; border-radius: 6px; padding: 7px 10px; }
+  .fb-reply-form .r-content, .fb-edit-form .e-content { flex: 1 1 100%; resize: vertical; }
+  .fb-reply-form .r-dept, .fb-reply-form .r-name, .fb-edit-form .e-dept, .fb-edit-form .e-name { flex: 1 1 110px; }
+  .fb-reply-form button, .fb-edit-form button { flex: 0 0 auto; background: #ececef; color: #555; border: none; border-radius: 6px; padding: 7px 12px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .fb-reply-form button:hover, .fb-edit-form button[type="submit"]:hover { background: var(--accent); color: white; }
   .fb-empty { font-size: 12.5px; color: #999; padding: 8px 0; }
   .cl-item { padding: 12px 0; border-bottom: 1px solid #efeff1; }
   .cl-item:last-child { border-bottom: none; }
@@ -118,7 +126,8 @@
 
   .tutorial-box { max-width: 480px; }
   .tutorial-image { background: var(--accent-tint); border-radius: 12px; padding: 20px; display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
-  .tutorial-caption { font-size: 14px; line-height: 1.8; color: #333; min-height: 70px; }
+  .tutorial-caption { font-size: 14px; line-height: 1.8; color: #333; min-height: 70px; white-space: pre-line; }
+  .tutorial-caption .note { display: block; margin-top: 8px; font-size: 11.5px; color: #999; line-height: 1.6; }
   .tutorial-dots { display: flex; justify-content: center; gap: 6px; margin: 16px 0; }
   .tutorial-dot { width: 7px; height: 7px; border-radius: 50%; background: #ddd; }
   .tutorial-dot.active { background: var(--accent); }
@@ -200,12 +209,12 @@
     <h3>使い勝手のフィードバック</h3>
     <form id="feedbackForm">
       <div class="form-field">
-        <label for="fbDepartment">部署</label>
-        <input id="fbDepartment" type="text" placeholder="例: 営業部">
+        <label for="fbDepartment">部署<span style="color:#c00">*</span></label>
+        <input id="fbDepartment" type="text" required placeholder="例：SKトレーディング営業、SKホールディングス経営企画室 等">
       </div>
       <div class="form-field">
-        <label for="fbName">名前</label>
-        <input id="fbName" type="text" placeholder="例: 山田太郎">
+        <label for="fbName">名前<span style="color:#c00">*</span> <span class="field-hint">(フルネーム)</span></label>
+        <input id="fbName" type="text" required placeholder="例: 山田太郎">
       </div>
       <div class="form-field">
         <label for="fbContent">内容<span style="color:#c00">*</span></label>
@@ -542,60 +551,171 @@ async function loadFeedbackList() {
   }
 }
 
+let openReplyFormFor = null; // どのfeedback項目の「返信する」フォームを開いているか
+let editingFeedbackId = null;
+let editingReply = null; // { feedbackId, replyId }
+
+function editFormHtml(prefix, values) {
+  return `
+    <input type="text" class="${prefix}-dept" placeholder="部署" maxlength="100" value="${escapeHtml(values.department || "")}">
+    <input type="text" class="${prefix}-name" placeholder="名前" maxlength="100" value="${escapeHtml(values.name || "")}">
+    <textarea class="${prefix}-content" rows="2" placeholder="内容" maxlength="1000">${escapeHtml(values.content || "")}</textarea>
+    <button type="submit">保存</button>
+    <button type="button" class="fb-cancel">キャンセル</button>`;
+}
+
 function renderFeedbackList(items) {
   const list = document.getElementById("fbList");
   if (items.length === 0) {
     list.innerHTML = `<div class="fb-empty">まだ投稿がありません</div>`;
     return;
   }
-  const savedDept = localStorage.getItem("skinfo_replyDept") || "";
-  const savedName = localStorage.getItem("skinfo_replyName") || "";
 
   list.innerHTML = items.map((item) => {
     const who = [item.department, item.name].filter(Boolean).join(" / ") || "匿名";
-    const repliesHtml = (item.replies || []).map((r) => `
-      <div class="fb-reply">
-        <div class="fb-reply-meta">${escapeHtml([r.department, r.name].filter(Boolean).join(" / ") || "担当者")} ・ ${formatDate(r.createdAt)}</div>
-        <div class="fb-reply-content">${escapeHtml(r.content)}</div>
-      </div>`).join("");
-    return `
-      <div class="fb-item">
-        <div class="fb-item-meta">${escapeHtml(who)} ・ ${formatDate(item.createdAt)}</div>
-        <div class="fb-item-content">${escapeHtml(item.content)}</div>
-        ${repliesHtml}
-        <form class="fb-reply-form" data-reply-id="${item.id}">
-          <input type="text" class="r-dept" placeholder="部署" maxlength="100" value="${escapeHtml(savedDept)}">
-          <input type="text" class="r-name" placeholder="名前" maxlength="100" value="${escapeHtml(savedName)}">
-          <input type="text" class="r-content" placeholder="返信内容(例: ○○を修正し、使い方を改善しました)" maxlength="1000">
-          <input type="password" class="r-password" placeholder="合言葉">
-          <button type="submit">返信</button>
-        </form>
-      </div>`;
+
+    const bodyHtml = editingFeedbackId === item.id
+      ? `<form class="fb-edit-form" data-edit-feedback-id="${item.id}">${editFormHtml("e", item)}</form>`
+      : `
+        <div class="fb-item-meta">
+          <span>${escapeHtml(who)} ・ ${formatDate(item.createdAt)}</span>
+          <span class="fb-actions">
+            <button type="button" class="fb-action-btn" data-edit-feedback="${item.id}">編集</button>
+            <button type="button" class="fb-action-btn danger" data-delete-feedback="${item.id}">削除</button>
+          </span>
+        </div>
+        <div class="fb-item-content">${escapeHtml(item.content)}</div>`;
+
+    const repliesHtml = (item.replies || []).map((r) => {
+      const who2 = [r.department, r.name].filter(Boolean).join(" / ") || "担当者";
+      if (r.id && editingReply && editingReply.feedbackId === item.id && editingReply.replyId === r.id) {
+        return `<form class="fb-edit-form" data-edit-feedback-id="${item.id}" data-edit-reply-id="${r.id}">${editFormHtml("e", r)}</form>`;
+      }
+      return `
+        <div class="fb-reply">
+          <div class="fb-reply-meta">
+            <span>${escapeHtml(who2)} ・ ${formatDate(r.createdAt)}</span>
+            ${r.id ? `
+            <span class="fb-actions">
+              <button type="button" class="fb-action-btn" data-edit-reply="${r.id}" data-edit-reply-feedback="${item.id}">編集</button>
+              <button type="button" class="fb-action-btn danger" data-delete-reply="${r.id}" data-delete-reply-feedback="${item.id}">削除</button>
+            </span>` : ""}
+          </div>
+          <div class="fb-reply-content">${escapeHtml(r.content)}</div>
+        </div>`;
+    }).join("");
+
+    const replyFormHtml = openReplyFormFor === item.id
+      ? `<form class="fb-reply-form" data-reply-id="${item.id}">${editFormHtml("r", {})}</form>`.replace("保存", "返信")
+      : `<button type="button" class="fb-reply-toggle" data-open-reply="${item.id}">返信する</button>`;
+
+    return `<div class="fb-item">${bodyHtml}${repliesHtml}${replyFormHtml}</div>`;
   }).join("");
 
+  // 返信フォームを開く
+  list.querySelectorAll("[data-open-reply]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      openReplyFormFor = btn.dataset.openReply;
+      renderFeedbackList(items);
+    });
+  });
+
+  // 返信フォーム送信
   list.querySelectorAll(".fb-reply-form").forEach((form) => {
+    form.querySelector(".fb-cancel")?.addEventListener("click", () => {
+      openReplyFormFor = null;
+      renderFeedbackList(items);
+    });
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const department = form.querySelector(".r-dept").value.trim();
       const name = form.querySelector(".r-name").value.trim();
       const content = form.querySelector(".r-content").value.trim();
-      const password = form.querySelector(".r-password").value;
       if (!content) return;
-      const btn = form.querySelector("button");
-      btn.disabled = true;
       try {
         const res = await fetch(`/api/feedback/${form.dataset.replyId}/reply`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ department, name, content, password })
+          body: JSON.stringify({ department, name, content })
         });
         if (!res.ok) throw new Error((await res.json()).error || "返信に失敗しました");
-        localStorage.setItem("skinfo_replyDept", department);
-        localStorage.setItem("skinfo_replyName", name);
+        openReplyFormFor = null;
         await loadFeedbackList();
       } catch (err) {
         alert(`返信に失敗しました: ${err.message}`);
-        btn.disabled = false;
+      }
+    });
+  });
+
+  // フィードバック本体の編集・削除
+  list.querySelectorAll("[data-edit-feedback]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      editingFeedbackId = btn.dataset.editFeedback;
+      renderFeedbackList(items);
+    });
+  });
+  list.querySelectorAll("[data-delete-feedback]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("本当によろしいですか？")) return;
+      try {
+        const res = await fetch(`/api/feedback/${btn.dataset.deleteFeedback}`, { method: "DELETE" });
+        if (!res.ok) throw new Error((await res.json()).error || "削除に失敗しました");
+        await loadFeedbackList();
+      } catch (err) {
+        alert(`削除に失敗しました: ${err.message}`);
+      }
+    });
+  });
+
+  // 返信の編集・削除
+  list.querySelectorAll("[data-edit-reply]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      editingReply = { feedbackId: btn.dataset.editReplyFeedback, replyId: btn.dataset.editReply };
+      renderFeedbackList(items);
+    });
+  });
+  list.querySelectorAll("[data-delete-reply]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("本当によろしいですか？")) return;
+      try {
+        const res = await fetch(`/api/feedback/${btn.dataset.deleteReplyFeedback}/reply/${btn.dataset.deleteReply}`, {
+          method: "DELETE"
+        });
+        if (!res.ok) throw new Error((await res.json()).error || "削除に失敗しました");
+        await loadFeedbackList();
+      } catch (err) {
+        alert(`削除に失敗しました: ${err.message}`);
+      }
+    });
+  });
+
+  // 編集フォーム(フィードバック本体・返信 共通)の保存・キャンセル
+  list.querySelectorAll(".fb-edit-form").forEach((form) => {
+    form.querySelector(".fb-cancel").addEventListener("click", () => {
+      editingFeedbackId = null;
+      editingReply = null;
+      renderFeedbackList(items);
+    });
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const department = form.querySelector(".e-dept").value.trim();
+      const name = form.querySelector(".e-name").value.trim();
+      const content = form.querySelector(".e-content").value.trim();
+      const feedbackId = form.dataset.editFeedbackId;
+      const replyId = form.dataset.editReplyId;
+      const url = replyId ? `/api/feedback/${feedbackId}/reply/${replyId}` : `/api/feedback/${feedbackId}`;
+      try {
+        const res = await fetch(url, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ department, name, content })
+        });
+        if (!res.ok) throw new Error((await res.json()).error || "更新に失敗しました");
+        editingFeedbackId = null;
+        editingReply = null;
+        await loadFeedbackList();
+      } catch (err) {
+        alert(`更新に失敗しました: ${err.message}`);
       }
     });
   });
@@ -656,7 +776,8 @@ const TUTORIAL_STEPS = [
   },
   {
     svg: `<svg width="200" height="110" viewBox="0 0 200 110"><circle cx="40" cy="55" r="22" fill="white" stroke="#4642A0" stroke-width="2"/><text x="40" y="63" font-size="20" fill="#4642A0" text-anchor="middle" font-weight="700">?</text><circle cx="100" cy="55" r="22" fill="#4642A0"/><svg x="88" y="43" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-4-1l-4.5 1 1-4.5a8.38 8.38 0 0 1-1-4A8.38 8.38 0 0 1 12.5 3a8.5 8.5 0 0 1 8.5 8.5z"/></svg><circle cx="160" cy="55" r="22" fill="white" stroke="#4642A0" stroke-width="2"/><svg x="148" y="43" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4642A0" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg></svg>`,
-    caption: "サイドバー下部の「使い方」からこのガイドを、「フィードバック」から使い勝手のご意見を送れます。「更新履歴」ではこれまでの機能追加・修正の記録も確認できます。"
+    caption: "サイドバー下部の「使い方」からこのガイドを、「フィードバック」から使い勝手のご意見を送れます。「更新履歴」ではこれまでの機能追加・修正の記録も確認できます。",
+    note: "※FB内容に関して詳しくお伺いする場合がございます。また、投稿されたFBに対して対応内容等を返信する場合がございますが、返信されたことの通知は来ませんのでご注意ください。"
   }
 ];
 let tutorialStep = 0;
@@ -664,7 +785,8 @@ let tutorialStep = 0;
 function renderTutorialStep() {
   const step = TUTORIAL_STEPS[tutorialStep];
   document.getElementById("tutorialImage").innerHTML = step.svg;
-  document.getElementById("tutorialCaption").textContent = step.caption;
+  document.getElementById("tutorialCaption").innerHTML =
+    escapeHtml(step.caption) + (step.note ? `<span class="note">${escapeHtml(step.note)}</span>` : "");
   document.getElementById("tutorialDots").innerHTML = TUTORIAL_STEPS.map((_, i) =>
     `<span class="tutorial-dot ${i === tutorialStep ? "active" : ""}"></span>`
   ).join("");

@@ -14,14 +14,20 @@ export async function onRequestPost(context) {
   }
 
   const { department, name, content } = body ?? {};
+  if (!department || !department.trim()) {
+    return jsonResponse({ error: "部署は必須です。" }, 400);
+  }
+  if (!name || !name.trim()) {
+    return jsonResponse({ error: "名前は必須です。" }, 400);
+  }
   if (!content || !content.trim()) {
     return jsonResponse({ error: "内容は必須です。" }, 400);
   }
 
   const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
   const { error } = await supabase.from("feedback").insert({
-    department: department || null,
-    name: name || null,
+    department: department.trim(),
+    name: name.trim(),
     content: content.trim()
   });
 

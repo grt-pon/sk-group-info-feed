@@ -2,7 +2,6 @@ import { createClient } from "@supabase/supabase-js";
 
 /**
  * POST /api/feedback/:id/reply — フィードバックへの返信を追加する。
- * 合言葉(FEEDBACK_REPLY_PASSWORD)が一致した場合のみ受け付ける簡易的な歯止め(本格的なログインではない)。
  */
 export async function onRequestPost(context) {
   const { env, params, request } = context;
@@ -15,10 +14,7 @@ export async function onRequestPost(context) {
     return jsonResponse({ error: "リクエストボディがJSONとして解釈できません" }, 400);
   }
 
-  const { department, name, content, password } = body ?? {};
-  if (!env.FEEDBACK_REPLY_PASSWORD || password !== env.FEEDBACK_REPLY_PASSWORD) {
-    return jsonResponse({ error: "合言葉が正しくありません。" }, 401);
-  }
+  const { department, name, content } = body ?? {};
   if (!content || !content.trim()) {
     return jsonResponse({ error: "返信内容は必須です。" }, 400);
   }
@@ -31,6 +27,7 @@ export async function onRequestPost(context) {
   }
 
   const reply = {
+    id: crypto.randomUUID(),
     department: department || null,
     name: name || null,
     content: content.trim(),
