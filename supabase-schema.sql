@@ -24,10 +24,16 @@ create index if not exists items_source_url_published_at_idx
 -- select unnest(categories) as category, count(*) from items group by category order by count(*) desc;
 
 -- feedback テーブル: 全社公開後の「使い勝手フィードバック」欄(部署・名前・内容)。
+-- repliesは返信(現時点では誰でも投稿可、将来的に管理者限定にする可能性あり)を
+-- itemsのreactionsと同様にjsonb配列として1レコード内に持たせる方式。
 create table if not exists feedback (
   id uuid primary key default gen_random_uuid(),
   department text,
   name text,
   content text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  replies jsonb not null default '[]'::jsonb
 );
+
+-- 既にfeedbackテーブルを作成済みの場合にrepliesカラムを追加するための文(2回目以降は無害)
+alter table feedback add column if not exists replies jsonb not null default '[]'::jsonb;

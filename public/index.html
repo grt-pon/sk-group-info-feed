@@ -85,10 +85,9 @@
   .modal-source-link { font-size: 13px; font-weight: 700; color: var(--accent); border: 1.5px solid var(--accent); border-radius: 8px; padding: 8px 16px; white-space: nowrap; }
   .modal-source-link:hover { background: var(--accent); color: white; }
 
-  .fab-group { position: fixed; right: 24px; bottom: 24px; display: flex; flex-direction: column; gap: 12px; z-index: 90; }
-  .fab-btn { width: 50px; height: 50px; border-radius: 50%; border: none; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(70,66,160,0.35); font-size: 18px; font-weight: 700; }
-  .fab-btn:hover { background: #38346f; }
-  .fab-btn.secondary { background: white; color: var(--accent); border: 1.5px solid var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  .sidebar-footer { margin-top: auto; display: flex; flex-direction: column; gap: 4px; padding-top: 12px; border-top: 1px solid #eee; }
+  .sidebar-footer-btn { display: flex; align-items: center; gap: 8px; background: none; border: none; color: #777; font-size: 13px; padding: 9px 10px; border-radius: 8px; text-align: left; }
+  .sidebar-footer-btn:hover { background: #f1f0f8; color: var(--accent); }
 
   .form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
   .form-field label { font-size: 12.5px; font-weight: 700; color: #555; }
@@ -96,6 +95,24 @@
   .form-submit { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 11px 20px; font-size: 14px; font-weight: 700; }
   .form-submit:hover { background: #38346f; }
   .form-note { font-size: 12.5px; color: var(--accent); margin-top: 10px; }
+  .fb-list-head { font-size: 12.5px; font-weight: 700; color: #666; margin: 22px 0 10px; padding-top: 16px; border-top: 1px solid #eee; }
+  .fb-item { padding: 12px 0; border-bottom: 1px solid #efeff1; }
+  .fb-item:last-child { border-bottom: none; }
+  .fb-item-meta { font-size: 11.5px; color: #999; margin-bottom: 4px; }
+  .fb-item-content { font-size: 13.5px; line-height: 1.7; color: #333; white-space: pre-wrap; }
+  .fb-reply { margin: 8px 0 0 16px; padding: 8px 10px; background: #f8f8fa; border-radius: 8px; }
+  .fb-reply-meta { font-size: 11px; color: #999; margin-bottom: 2px; }
+  .fb-reply-content { font-size: 12.5px; line-height: 1.6; color: #444; white-space: pre-wrap; }
+  .fb-reply-form { display: flex; gap: 6px; margin-top: 8px; margin-left: 16px; }
+  .fb-reply-form input { flex: 1; font: inherit; font-size: 12.5px; border: 1px solid #ddd; border-radius: 6px; padding: 7px 10px; }
+  .fb-reply-form button { background: #ececef; color: #555; border: none; border-radius: 6px; padding: 7px 12px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .fb-reply-form button:hover { background: var(--accent); color: white; }
+  .fb-empty { font-size: 12.5px; color: #999; padding: 8px 0; }
+  .cl-item { padding: 12px 0; border-bottom: 1px solid #efeff1; }
+  .cl-item:last-child { border-bottom: none; }
+  .cl-date { font-size: 11.5px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  .cl-content { font-size: 13.5px; line-height: 1.7; color: #333; }
+  .cl-content li { margin-bottom: 2px; }
 
   .tutorial-box { max-width: 480px; }
   .tutorial-image { background: var(--accent-tint); border-radius: 12px; padding: 20px; display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
@@ -128,6 +145,20 @@
       <button data-mode="mine">カテゴリを絞ってみる</button>
     </div>
     <div class="cat-list" id="catList"></div>
+    <div class="sidebar-footer">
+      <button class="sidebar-footer-btn" id="helpFab">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.5 2.5 0 1 1 3.5 2.3c-.9.5-1.5 1-1.5 2"/><circle cx="12" cy="16.8" r="0.6" fill="currentColor" stroke="none"/></svg>
+        使い方
+      </button>
+      <button class="sidebar-footer-btn" id="feedbackFab">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-4-1l-4.5 1 1-4.5a8.38 8.38 0 0 1-1-4A8.38 8.38 0 0 1 12.5 3a8.5 8.5 0 0 1 8.5 8.5z"/></svg>
+        フィードバック
+      </button>
+      <button class="sidebar-footer-btn" id="changelogFab">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
+        更新履歴
+      </button>
+    </div>
   </div>
 
   <div class="main">
@@ -159,13 +190,6 @@
   </div>
 </div>
 
-<div class="fab-group">
-  <button class="fab-btn secondary" id="helpFab" aria-label="使い方を見る" title="使い方を見る">?</button>
-  <button class="fab-btn" id="feedbackFab" aria-label="フィードバックを送る" title="フィードバックを送る">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-4-1l-4.5 1 1-4.5a8.38 8.38 0 0 1-1-4A8.38 8.38 0 0 1 12.5 3a8.5 8.5 0 0 1 8.5 8.5z"/></svg>
-  </button>
-</div>
-
 <div class="modal-overlay hidden" id="feedbackOverlay">
   <div class="modal-box">
     <button class="modal-close" id="feedbackClose" aria-label="閉じる">
@@ -188,6 +212,8 @@
       <button type="submit" class="form-submit">送信</button>
       <div class="form-note hidden" id="fbNote">送信しました。ありがとうございます。</div>
     </form>
+    <div class="fb-list-head">みんなのフィードバック</div>
+    <div id="fbList"></div>
   </div>
 </div>
 
@@ -204,6 +230,16 @@
       <button class="tutorial-back" id="tutorialBack">← 戻る</button>
       <button class="tutorial-next" id="tutorialNext">次へ →</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="changelogOverlay">
+  <div class="modal-box">
+    <button class="modal-close" id="changelogClose" aria-label="閉じる">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h3>更新履歴</h3>
+    <div id="changelogList"></div>
   </div>
 </div>
 
@@ -465,7 +501,11 @@ document.getElementById("modalOverlay").addEventListener("click", (e) => {
   if (e.target.id === "modalOverlay") closeDetail();
 });
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeDetail();
+  if (e.key !== "Escape") return;
+  closeDetail();
+  document.getElementById("feedbackOverlay").classList.add("hidden");
+  document.getElementById("tutorialOverlay").classList.add("hidden");
+  document.getElementById("changelogOverlay").classList.add("hidden");
 });
 
 document.getElementById("searchInput").addEventListener("input", renderFeed);
@@ -481,9 +521,73 @@ document.querySelectorAll("#modeToggle button").forEach((btn) => {
 
 // --- フィードバック欄 ---
 const feedbackOverlay = document.getElementById("feedbackOverlay");
-document.getElementById("feedbackFab").addEventListener("click", () => feedbackOverlay.classList.remove("hidden"));
+document.getElementById("feedbackFab").addEventListener("click", () => {
+  feedbackOverlay.classList.remove("hidden");
+  loadFeedbackList();
+});
 document.getElementById("feedbackClose").addEventListener("click", () => feedbackOverlay.classList.add("hidden"));
 feedbackOverlay.addEventListener("click", (e) => { if (e.target === feedbackOverlay) feedbackOverlay.classList.add("hidden"); });
+
+async function loadFeedbackList() {
+  const list = document.getElementById("fbList");
+  list.innerHTML = `<div class="fb-empty">読み込み中...</div>`;
+  try {
+    const res = await fetch("/api/feedback");
+    const items = await res.json();
+    renderFeedbackList(items);
+  } catch {
+    list.innerHTML = `<div class="fb-empty">読み込みに失敗しました</div>`;
+  }
+}
+
+function renderFeedbackList(items) {
+  const list = document.getElementById("fbList");
+  if (items.length === 0) {
+    list.innerHTML = `<div class="fb-empty">まだ投稿がありません</div>`;
+    return;
+  }
+  list.innerHTML = items.map((item) => {
+    const who = [item.department, item.name].filter(Boolean).join(" / ") || "匿名";
+    const repliesHtml = (item.replies || []).map((r) => `
+      <div class="fb-reply">
+        <div class="fb-reply-meta">${escapeHtml(r.author)} ・ ${formatDate(r.createdAt)}</div>
+        <div class="fb-reply-content">${escapeHtml(r.content)}</div>
+      </div>`).join("");
+    return `
+      <div class="fb-item">
+        <div class="fb-item-meta">${escapeHtml(who)} ・ ${formatDate(item.createdAt)}</div>
+        <div class="fb-item-content">${escapeHtml(item.content)}</div>
+        ${repliesHtml}
+        <form class="fb-reply-form" data-reply-id="${item.id}">
+          <input type="text" placeholder="返信する" maxlength="500">
+          <button type="submit">返信</button>
+        </form>
+      </div>`;
+  }).join("");
+
+  list.querySelectorAll(".fb-reply-form").forEach((form) => {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const input = form.querySelector("input");
+      const content = input.value.trim();
+      if (!content) return;
+      const btn = form.querySelector("button");
+      btn.disabled = true;
+      try {
+        const res = await fetch(`/api/feedback/${form.dataset.replyId}/reply`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content })
+        });
+        if (!res.ok) throw new Error((await res.json()).error || "返信に失敗しました");
+        await loadFeedbackList();
+      } catch (err) {
+        alert(`返信に失敗しました: ${err.message}`);
+        btn.disabled = false;
+      }
+    });
+  });
+}
 
 document.getElementById("feedbackForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -503,7 +607,7 @@ document.getElementById("feedbackForm").addEventListener("submit", async (e) => 
     note.textContent = "送信しました。ありがとうございます。";
     note.classList.remove("hidden");
     document.getElementById("fbContent").value = "";
-    setTimeout(() => feedbackOverlay.classList.add("hidden"), 1200);
+    await loadFeedbackList();
   } catch (err) {
     note.textContent = `送信に失敗しました: ${err.message}`;
     note.classList.remove("hidden");
@@ -531,16 +635,16 @@ const TUTORIAL_STEPS = [
     caption: "記事のタイトルや要約をクリックすると、省略されずに全文の要約がポップアップで読めます。"
   },
   {
-    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><rect x="20" y="8" width="160" height="94" rx="10" fill="white" stroke="#e6e6e8"/><rect x="32" y="20" width="100" height="9" rx="3" fill="#333"/><rect x="32" y="36" width="136" height="6" rx="3" fill="#ccc"/><rect x="32" y="48" width="136" height="6" rx="3" fill="#ccc"/><rect x="100" y="70" width="68" height="22" rx="6" fill="#4642A0"/><text x="134" y="85" font-size="10" fill="white" text-anchor="middle" font-weight="700">元記事を見る →</text></svg>`,
+    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><rect x="10" y="8" width="180" height="94" rx="10" fill="white" stroke="#e6e6e8"/><rect x="22" y="22" width="110" height="9" rx="3" fill="#333"/><rect x="22" y="40" width="156" height="6" rx="3" fill="#ccc"/><rect x="22" y="52" width="156" height="6" rx="3" fill="#ccc"/><rect x="100" y="72" width="74" height="20" rx="6" fill="#4642A0"/><text x="137" y="86" font-size="9.5" fill="white" text-anchor="middle" font-weight="700">元記事を見る →</text></svg>`,
     caption: "ポップアップ内の「元記事を見る」ボタンから、気になる記事だけ元のページに移動できます。"
   },
   {
-    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><rect x="40" y="35" width="50" height="40" rx="8" fill="rgba(70,66,160,0.1)"/><path d="M60 60v-12h-6l4-10 10 6-4 10h8" fill="none" stroke="#4642A0" stroke-width="2" stroke-linejoin="round"/><rect x="110" y="35" width="50" height="40" rx="8" fill="#f3f0fa"/><path d="M130 50v12h-6l4 10 10-6-4-10h8" fill="none" stroke="#999" stroke-width="2" stroke-linejoin="round"/></svg>`,
+    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><rect x="40" y="35" width="50" height="40" rx="8" fill="rgba(70,66,160,0.1)"/><svg x="53" y="43" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4642A0" stroke-width="1.8"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3z"/><path d="M7 11l3.5-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 1.9 2.6l-1.8 6A2 2 0 0 1 16.2 20H9a2 2 0 0 1-2-2"/></svg><rect x="110" y="35" width="50" height="40" rx="8" fill="#f3f0fa"/><svg x="123" y="43" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.8" style="transform:scaleY(-1);transform-origin:center;"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3z"/><path d="M7 11l3.5-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 1.9 2.6l-1.8 6A2 2 0 0 1 16.2 20H9a2 2 0 0 1-2-2"/></svg></svg>`,
     caption: "各記事の「使える / 不要」ボタンで評価できます。評価は今後の情報源・キーワードの改善に使います。"
   },
   {
-    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><circle cx="70" cy="55" r="26" fill="white" stroke="#4642A0" stroke-width="2"/><text x="70" y="62" font-size="22" fill="#4642A0" text-anchor="middle" font-weight="700">?</text><circle cx="140" cy="55" r="26" fill="#4642A0"/><path d="M128 50a12 12 0 1 1 10 12l-6 4 1-6a12 12 0 0 1-5-10z" fill="white"/></svg>`,
-    caption: "右下の「?」ボタンでこのガイドをいつでも見返せます。吹き出しボタンからは使い勝手のフィードバックを送れます。"
+    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><circle cx="70" cy="55" r="26" fill="white" stroke="#4642A0" stroke-width="2"/><text x="70" y="63" font-size="22" fill="#4642A0" text-anchor="middle" font-weight="700">?</text><circle cx="140" cy="55" r="26" fill="#4642A0"/><path d="M128 48a12 12 0 1 1 9 11.6l-7.5 3.4 1.5-6.4a12 12 0 0 1-3-8.6z" fill="white"/></svg>`,
+    caption: "サイドバー下部の「使い方」からこのガイドをいつでも見返せます。「フィードバック」からは使い勝手のご意見を送れます。"
   }
 ];
 let tutorialStep = 0;
@@ -571,6 +675,43 @@ document.getElementById("tutorialNext").addEventListener("click", () => {
   if (tutorialStep < TUTORIAL_STEPS.length - 1) { tutorialStep++; renderTutorialStep(); }
   else tutorialOverlay.classList.add("hidden");
 });
+
+// --- 更新履歴 ---
+// 機能追加・修正のたびにここへ追記していく(新しいものを先頭に)。
+const CHANGELOG = [
+  {
+    date: "2026-10-07",
+    items: ["フィードバック機能(投稿の全体公開・返信)を追加", "使い方ガイド(「?」→サイドバー「使い方」)を追加", "更新履歴(このページ)を追加"]
+  },
+  {
+    date: "2026-10-06",
+    items: ["要約の冒頭がタイトルと同じ内容を繰り返さないよう改善", "「○○統計を更新しました」のような中身のないお知らせを表示しないよう改善", "一覧に要約が表示されるようデザインを変更"]
+  },
+  {
+    date: "2026-10-01",
+    items: ["発表日を正しく表示・新しい順に並ぶよう修正", "自動収集が止まっていた不具合を修正", "古紙ジャーナルを情報源として追加"]
+  },
+  {
+    date: "2026-09-28",
+    items: ["SKグループ情報フィードを公開", "記事クリックで要約全文をポップアップ表示できるように"]
+  }
+];
+
+function renderChangelog() {
+  document.getElementById("changelogList").innerHTML = CHANGELOG.map((entry) => `
+    <div class="cl-item">
+      <div class="cl-date">${entry.date}</div>
+      <ul class="cl-content">${entry.items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul>
+    </div>`).join("");
+}
+
+const changelogOverlay = document.getElementById("changelogOverlay");
+document.getElementById("changelogFab").addEventListener("click", () => {
+  renderChangelog();
+  changelogOverlay.classList.remove("hidden");
+});
+document.getElementById("changelogClose").addEventListener("click", () => changelogOverlay.classList.add("hidden"));
+changelogOverlay.addEventListener("click", (e) => { if (e.target === changelogOverlay) changelogOverlay.classList.add("hidden"); });
 
 loadItems();
 </script>

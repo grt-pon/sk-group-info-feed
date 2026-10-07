@@ -3,7 +3,7 @@ import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { addReaction, listItems } from "./lib/store.js";
-import { submitFeedback } from "./lib/feedbackStore.js";
+import { submitFeedback, listFeedback, addFeedbackReply } from "./lib/feedbackStore.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, "..", "public");
@@ -46,6 +46,26 @@ app.post("/api/feedback", async (req, res) => {
   const { department, name, content } = req.body ?? {};
   try {
     await submitFeedback({ department, name, content });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 投稿済みフィードバックを全員が見られるようにする一覧API。
+app.get("/api/feedback", async (req, res) => {
+  try {
+    res.json(await listFeedback());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// フィードバックへの返信(現時点では誰でも投稿可)。
+app.post("/api/feedback/:id/reply", async (req, res) => {
+  const { author, content } = req.body ?? {};
+  try {
+    await addFeedbackReply(req.params.id, { author, content });
     res.json({ ok: true });
   } catch (err) {
     res.status(400).json({ error: err.message });

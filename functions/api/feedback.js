@@ -32,6 +32,30 @@ export async function onRequestPost(context) {
   return jsonResponse({ ok: true });
 }
 
+/**
+ * GET /api/feedback — 投稿済みフィードバックを全員が見られるよう一覧で返す(新しい順)。
+ */
+export async function onRequestGet(context) {
+  const { env } = context;
+  const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+
+  const { data, error } = await supabase.from("feedback").select("*").order("created_at", { ascending: false });
+  if (error) {
+    return jsonResponse({ error: error.message }, 500);
+  }
+
+  const items = (data ?? []).map((row) => ({
+    id: row.id,
+    department: row.department,
+    name: row.name,
+    content: row.content,
+    createdAt: row.created_at,
+    replies: row.replies ?? []
+  }));
+
+  return jsonResponse(items);
+}
+
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
