@@ -43,8 +43,9 @@
   .meta-row { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
   .meta-text { font-size: 12px; color: #777; }
   .actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-  .actions button { background: none; border: none; color: #888; padding: 4px; display: flex; }
+  .actions button { background: none; border: none; color: #888; padding: 4px; display: flex; align-items: center; gap: 3px; }
   .actions button:hover { color: var(--accent); }
+  .reaction-count { font-size: 11px; font-weight: 700; min-width: 8px; }
   .pickup-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
   .pickup-card { background: white; border: 1px solid #e6e6e8; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
   .pickup-strip { height: 5px; }
@@ -390,14 +391,24 @@ function matchesFilters(item, query) {
   return haystack.includes(query.toLowerCase());
 }
 
-function reactionButtons(id) {
+function reactionCounts(item) {
+  // 同じ人の連打で水増しされないよう、userId(ブラウザごとの簡易ID)の重複を除いて数える。
+  const want = new Set((item.reactions || []).filter((r) => r.judgement === "want").map((r) => r.userId)).size;
+  const notWant = new Set((item.reactions || []).filter((r) => r.judgement === "not_want").map((r) => r.userId)).size;
+  return { want, notWant };
+}
+
+function reactionButtons(item) {
+  const { want, notWant } = reactionCounts(item);
   return `
     <div class="actions">
-      <button data-id="${id}" data-judgement="want" title="使える">
+      <button data-id="${item.id}" data-judgement="want" title="使える">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3z"/><path d="M7 11l3.5-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 1.9 2.6l-1.8 6A2 2 0 0 1 16.2 20H9a2 2 0 0 1-2-2"/></svg>
+        <span class="reaction-count">${want}</span>
       </button>
-      <button data-id="${id}" data-judgement="not_want" title="不要">
+      <button data-id="${item.id}" data-judgement="not_want" title="不要">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="transform:scaleY(-1)"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3z"/><path d="M7 11l3.5-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 1.9 2.6l-1.8 6A2 2 0 0 1 16.2 20H9a2 2 0 0 1-2-2"/></svg>
+        <span class="reaction-count">${notWant}</span>
       </button>
     </div>`;
 }
@@ -439,7 +450,7 @@ function renderFeed() {
             <span class="meta-text">${escapeHtml(hero.sourceName)}${hero.isPrimarySource ? "・一次情報" : ""} ／ ${formatDate(hero.publishedAt) || "日付不明"}</span>
             <div class="actions">
               <a href="${hero.sourceUrl}" target="_blank" style="font-size:12.5px; font-weight:700;">元記事を見る →</a>
-              ${reactionButtons(hero.id)}
+              ${reactionButtons(hero)}
             </div>
           </div>
         </div>
@@ -465,7 +476,7 @@ function renderFeed() {
               <span style="font-size:11px; color:#999;">${escapeHtml(item.sourceName)} ／ ${formatDate(item.publishedAt) || "日付不明"}</span>
               <div class="pickup-foot">
                 <a href="${item.sourceUrl}" target="_blank" style="font-weight:700;">元記事 →</a>
-                ${reactionButtons(item.id)}
+                ${reactionButtons(item)}
               </div>
             </div>
           </div>`;
@@ -490,7 +501,7 @@ function renderFeed() {
               <p class="news-summary">${escapeHtml(item.summary)}</p>
               <div class="news-meta"><span>${escapeHtml(item.sourceName)}</span><span>${formatDate(item.publishedAt) || "日付不明"}</span></div>
             </div>
-            <div class="news-side">${reactionButtons(item.id)}</div>
+            <div class="news-side">${reactionButtons(item)}</div>
           </div>`;
         }).join("")}
       </div>
@@ -508,11 +519,20 @@ function renderFeed() {
       const id = btn.dataset.id;
       const judgement = btn.dataset.judgement;
       btn.style.color = "#4642A0";
-      await fetch(`/api/items/${id}/reaction`, {
+      const res = await fetch(`/api/items/${id}/reaction`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ judgement, userId: getClientId() })
       });
+      if (!res.ok) return;
+      // 全体を再読込せず、その場でカウント表示だけ更新する。
+      const item = allItems.find((i) => i.id === id);
+      if (item) {
+        item.reactions = [...(item.reactions || []), { userId: getClientId(), judgement, reactedAt: new Date().toISOString() }];
+        const { want, notWant } = reactionCounts(item);
+        document.querySelectorAll(`[data-id="${id}"][data-judgement="want"] .reaction-count`).forEach((el) => { el.textContent = want; });
+        document.querySelectorAll(`[data-id="${id}"][data-judgement="not_want"] .reaction-count`).forEach((el) => { el.textContent = notWant; });
+      }
     });
   });
 }

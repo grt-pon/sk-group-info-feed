@@ -21,28 +21,19 @@ export async function onRequestGet(context) {
     return jsonResponse({ error: error.message }, 500);
   }
 
-  const NOT_WANT_HIDE_THRESHOLD = 3;
-
-  const items = (data ?? [])
-    .map((row) => ({
-      id: row.id,
-      title: row.title,
-      summary: row.summary,
-      sourceUrl: row.source_url,
-      sourceId: row.source_id,
-      sourceName: row.source_name,
-      isPrimarySource: row.is_primary_source,
-      categories: row.categories,
-      publishedAt: row.published_at,
-      collectedAt: row.collected_at,
-      reactions: row.reactions ?? []
-    }))
-    // 「不要」が一定数以上ついた記事は、複数人の判断が揃ったとみなして非表示にする。
-    // 同じ人の連打で非表示にならないよう、userId(ブラウザごとの簡易ID)の重複を除いて数える。
-    .filter((item) => {
-      const notWantUsers = new Set(item.reactions.filter((r) => r.judgement === "not_want").map((r) => r.userId));
-      return notWantUsers.size < NOT_WANT_HIDE_THRESHOLD;
-    });
+  const items = (data ?? []).map((row) => ({
+    id: row.id,
+    title: row.title,
+    summary: row.summary,
+    sourceUrl: row.source_url,
+    sourceId: row.source_id,
+    sourceName: row.source_name,
+    isPrimarySource: row.is_primary_source,
+    categories: row.categories,
+    publishedAt: row.published_at,
+    collectedAt: row.collected_at,
+    reactions: row.reactions ?? []
+  }));
 
   return jsonResponse(items);
 }

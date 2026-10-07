@@ -22,24 +22,9 @@ if (process.env.SUPABASE_URL) {
 
 console.log(`[store] 保存先: ${backendName}`);
 
-// 「不要」が一定数以上ついた記事は、個人の一存ではなく複数人の判断が揃ったとみなして非表示にする。
-// (同じ仕組みをfunctions/api/items.js側でも別実装している。Cloudflare Pages Functionsは
-//  Workersランタイムで動く別プロセスのため、このファイルをそのままimportできない)
-export const NOT_WANT_HIDE_THRESHOLD = 3;
-
-function isHiddenByReactions(item) {
-  // 同じ人の連打で非表示にならないよう、userId(ブラウザごとの簡易ID)の重複を除いて数える。
-  const notWantUsers = new Set(
-    (item.reactions || []).filter((r) => r.judgement === "not_want").map((r) => r.userId)
-  );
-  return notWantUsers.size >= NOT_WANT_HIDE_THRESHOLD;
-}
-
+// 自動非表示はやめ、「不要」が多い記事は人が確認して手動で削除する方針にした。
+// (表示自体は常にそのまま行い、要/不要の件数をUI側で見せることで判断材料にする)
 export const existsByUrl = backend.existsByUrl;
 export const saveItem = backend.saveItem;
 export const addReaction = backend.addReaction;
-
-export async function listItems() {
-  const items = await backend.listItems();
-  return items.filter((item) => !isHiddenByReactions(item));
-}
+export const listItems = backend.listItems;
