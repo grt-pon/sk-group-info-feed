@@ -122,7 +122,7 @@
   .cl-item { padding: 12px 0; border-bottom: 1px solid #efeff1; }
   .cl-item:last-child { border-bottom: none; }
   .cl-date { font-size: 11.5px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
-  .cl-content { font-size: 13.5px; line-height: 1.7; color: #333; }
+  .cl-content { font-size: 13.5px; line-height: 1.7; color: #333; white-space: pre-wrap; }
   .cl-content li { margin-bottom: 2px; }
   .confirm-box { max-width: 360px; padding: 26px 26px 22px; }
   .confirm-box p { margin: 0 0 20px; font-size: 14.5px; line-height: 1.7; color: #222; }
@@ -176,6 +176,10 @@
       <button class="sidebar-footer-btn" id="changelogFab">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
         更新履歴
+      </button>
+      <button class="sidebar-footer-btn" id="analysisFab">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
+        分析レポート
       </button>
     </div>
   </div>
@@ -259,6 +263,17 @@
     </button>
     <h3>更新履歴</h3>
     <div id="changelogList"></div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="analysisOverlay">
+  <div class="modal-box">
+    <button class="modal-close" id="analysisClose" aria-label="閉じる">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h3>分析レポート</h3>
+    <p style="font-size:12px; color:#999; margin-top:-8px;">「使える/不要」の反応傾向をAIが週次で分析したものです。ここに書かれた提案は自動では反映されません。</p>
+    <div id="analysisList"></div>
   </div>
 </div>
 
@@ -565,6 +580,7 @@ document.addEventListener("keydown", (e) => {
   document.getElementById("feedbackOverlay").classList.add("hidden");
   document.getElementById("tutorialOverlay").classList.add("hidden");
   document.getElementById("changelogOverlay").classList.add("hidden");
+  document.getElementById("analysisOverlay").classList.add("hidden");
 });
 
 document.getElementById("searchInput").addEventListener("input", renderFeed);
@@ -906,6 +922,31 @@ document.getElementById("changelogFab").addEventListener("click", () => {
 });
 document.getElementById("changelogClose").addEventListener("click", () => changelogOverlay.classList.add("hidden"));
 changelogOverlay.addEventListener("click", (e) => { if (e.target === changelogOverlay) changelogOverlay.classList.add("hidden"); });
+
+// --- 分析レポート(週次でAIが反応傾向を分析したもの。読み取り専用) ---
+const analysisOverlay = document.getElementById("analysisOverlay");
+document.getElementById("analysisFab").addEventListener("click", async () => {
+  analysisOverlay.classList.remove("hidden");
+  const list = document.getElementById("analysisList");
+  list.innerHTML = `<div class="fb-empty">読み込み中...</div>`;
+  try {
+    const res = await fetch("/api/analysis-reports");
+    const reports = await res.json();
+    if (reports.length === 0) {
+      list.innerHTML = `<div class="fb-empty">まだレポートがありません(反応がある程度たまると、週次で自動生成されます)</div>`;
+      return;
+    }
+    list.innerHTML = reports.map((r) => `
+      <div class="cl-item">
+        <div class="cl-date">${formatDate(r.createdAt)}</div>
+        <div class="cl-content">${escapeHtml(r.content)}</div>
+      </div>`).join("");
+  } catch {
+    list.innerHTML = `<div class="fb-empty">読み込みに失敗しました</div>`;
+  }
+});
+document.getElementById("analysisClose").addEventListener("click", () => analysisOverlay.classList.add("hidden"));
+analysisOverlay.addEventListener("click", (e) => { if (e.target === analysisOverlay) analysisOverlay.classList.add("hidden"); });
 
 // --- 確認ダイアログ(ブラウザ標準confirm()はURLが表示されて分かりにくいため自前で用意) ---
 const confirmOverlay = document.getElementById("confirmOverlay");

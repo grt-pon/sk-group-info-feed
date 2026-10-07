@@ -37,3 +37,11 @@ create table if not exists feedback (
 
 -- 既にfeedbackテーブルを作成済みの場合にrepliesカラムを追加するための文(2回目以降は無害)
 alter table feedback add column if not exists replies jsonb not null default '[]'::jsonb;
+
+-- analysis_reports テーブル: 週次でAIが「使える/不要」の反応傾向を分析したレポート。
+-- 自動適用はせず、ここに書かれた提案を人が見て、必要な修正を会話(Claude Code)で指示する運用。
+create table if not exists analysis_reports (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  content text not null
+);

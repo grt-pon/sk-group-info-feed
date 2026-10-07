@@ -12,6 +12,7 @@ import {
   updateFeedbackReply,
   deleteFeedbackReply
 } from "./lib/feedbackStore.js";
+import { listAnalysisReports } from "./lib/analysisReportsStore.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, "..", "public");
@@ -119,6 +120,15 @@ app.delete("/api/feedback/:id/reply/:replyId", async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+// 週次分析レポートの一覧(読み取り専用)。
+app.get("/api/analysis-reports", async (req, res) => {
+  try {
+    res.json(await listAnalysisReports());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
