@@ -301,6 +301,17 @@ function escapeHtml(s) {
   return (s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+// ログイン機能はないため、ブラウザごとに持たせるランダムIDで「誰が反応したか」を区別する。
+// これにより「不要」の集計が、同じ人の連打ではなく複数人の判断が揃ったかを見られるようにする。
+function getClientId() {
+  let id = localStorage.getItem("skinfo_clientId");
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem("skinfo_clientId", id);
+  }
+  return id;
+}
+
 async function loadItems() {
   const res = await fetch("/api/items");
   allItems = await res.json();
@@ -500,7 +511,7 @@ function renderFeed() {
       await fetch(`/api/items/${id}/reaction`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ judgement })
+        body: JSON.stringify({ judgement, userId: getClientId() })
       });
     });
   });
