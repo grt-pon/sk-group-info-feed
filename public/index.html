@@ -123,6 +123,13 @@
   .cl-date { font-size: 11.5px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
   .cl-content { font-size: 13.5px; line-height: 1.7; color: #333; }
   .cl-content li { margin-bottom: 2px; }
+  .confirm-box { max-width: 360px; padding: 26px 26px 22px; }
+  .confirm-box p { margin: 0 0 20px; font-size: 14.5px; line-height: 1.7; color: #222; }
+  .confirm-actions { display: flex; justify-content: flex-end; gap: 10px; }
+  .confirm-actions button { border-radius: 8px; padding: 9px 18px; font-size: 13.5px; font-weight: 700; border: none; }
+  .confirm-cancel { background: #ececef; color: #555; }
+  .confirm-ok { background: #c0392b; color: white; }
+  .confirm-ok:hover { background: #a33025; }
 
   .tutorial-box { max-width: 480px; }
   .tutorial-image { background: var(--accent-tint); border-radius: 12px; padding: 20px; display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
@@ -251,6 +258,16 @@
     </button>
     <h3>更新履歴</h3>
     <div id="changelogList"></div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="confirmOverlay">
+  <div class="modal-box confirm-box">
+    <p id="confirmMessage"></p>
+    <div class="confirm-actions">
+      <button class="confirm-cancel" id="confirmCancel">キャンセル</button>
+      <button class="confirm-ok" id="confirmOk">削除する</button>
+    </div>
   </div>
 </div>
 
@@ -656,7 +673,7 @@ function renderFeedbackList(items) {
   });
   list.querySelectorAll("[data-delete-feedback]").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      if (!confirm("本当によろしいですか？")) return;
+      if (!(await showConfirm("本当によろしいですか？"))) return;
       try {
         const res = await fetch(`/api/feedback/${btn.dataset.deleteFeedback}`, { method: "DELETE" });
         if (!res.ok) throw new Error((await res.json()).error || "削除に失敗しました");
@@ -676,7 +693,7 @@ function renderFeedbackList(items) {
   });
   list.querySelectorAll("[data-delete-reply]").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      if (!confirm("本当によろしいですか？")) return;
+      if (!(await showConfirm("本当によろしいですか？"))) return;
       try {
         const res = await fetch(`/api/feedback/${btn.dataset.deleteReplyFeedback}/reply/${btn.dataset.deleteReply}`, {
           method: "DELETE"
@@ -853,6 +870,30 @@ document.getElementById("changelogFab").addEventListener("click", () => {
 });
 document.getElementById("changelogClose").addEventListener("click", () => changelogOverlay.classList.add("hidden"));
 changelogOverlay.addEventListener("click", (e) => { if (e.target === changelogOverlay) changelogOverlay.classList.add("hidden"); });
+
+// --- 確認ダイアログ(ブラウザ標準confirm()はURLが表示されて分かりにくいため自前で用意) ---
+const confirmOverlay = document.getElementById("confirmOverlay");
+function showConfirm(message) {
+  document.getElementById("confirmMessage").textContent = message;
+  confirmOverlay.classList.remove("hidden");
+  return new Promise((resolve) => {
+    const okBtn = document.getElementById("confirmOk");
+    const cancelBtn = document.getElementById("confirmCancel");
+    const cleanup = (result) => {
+      confirmOverlay.classList.add("hidden");
+      okBtn.removeEventListener("click", onOk);
+      cancelBtn.removeEventListener("click", onCancel);
+      confirmOverlay.removeEventListener("click", onOverlay);
+      resolve(result);
+    };
+    const onOk = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+    const onOverlay = (e) => { if (e.target === confirmOverlay) cleanup(false); };
+    okBtn.addEventListener("click", onOk);
+    cancelBtn.addEventListener("click", onCancel);
+    confirmOverlay.addEventListener("click", onOverlay);
+  });
+}
 
 loadItems();
 </script>
