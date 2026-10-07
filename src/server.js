@@ -3,6 +3,7 @@ import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { addReaction, listItems } from "./lib/store.js";
+import { submitFeedback } from "./lib/feedbackStore.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, "..", "public");
@@ -37,6 +38,17 @@ app.post("/api/items/:id/reaction", async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     res.status(404).json({ error: err.message });
+  }
+});
+
+// 使い勝手フィードバック(部署・名前・内容)の投稿を受け付けるAPI。
+app.post("/api/feedback", async (req, res) => {
+  const { department, name, content } = req.body ?? {};
+  try {
+    await submitFeedback({ department, name, content });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 

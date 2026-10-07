@@ -22,3 +22,12 @@ create index if not exists items_source_url_published_at_idx
 -- 参考: 他の人がSupabaseの「Table Editor」で直接データを見たり、SQLで集計したりできます。
 -- 例: カテゴリ別の件数
 -- select unnest(categories) as category, count(*) from items group by category order by count(*) desc;
+
+-- feedback テーブル: 全社公開後の「使い勝手フィードバック」欄(部署・名前・内容)。
+create table if not exists feedback (
+  id uuid primary key default gen_random_uuid(),
+  department text,
+  name text,
+  content text not null,
+  created_at timestamptz not null default now()
+);

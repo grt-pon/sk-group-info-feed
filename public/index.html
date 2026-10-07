@@ -74,7 +74,7 @@
   .empty { color: #999; font-size: 13px; padding: 40px 0; text-align: center; }
   .clickable { cursor: pointer; }
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
-  .modal-overlay.hidden { display: none; }
+  .hidden { display: none; }
   .modal-box { background: white; border-radius: 16px; max-width: 620px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 28px 30px; position: relative; }
   .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: #999; padding: 6px; }
   .modal-close:hover { color: var(--accent); }
@@ -84,6 +84,30 @@
   .modal-meta { font-size: 12px; color: #888; margin-top: 18px; padding-top: 14px; border-top: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .modal-source-link { font-size: 13px; font-weight: 700; color: var(--accent); border: 1.5px solid var(--accent); border-radius: 8px; padding: 8px 16px; white-space: nowrap; }
   .modal-source-link:hover { background: var(--accent); color: white; }
+
+  .fab-group { position: fixed; right: 24px; bottom: 24px; display: flex; flex-direction: column; gap: 12px; z-index: 90; }
+  .fab-btn { width: 50px; height: 50px; border-radius: 50%; border: none; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(70,66,160,0.35); font-size: 18px; font-weight: 700; }
+  .fab-btn:hover { background: #38346f; }
+  .fab-btn.secondary { background: white; color: var(--accent); border: 1.5px solid var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+  .form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+  .form-field label { font-size: 12.5px; font-weight: 700; color: #555; }
+  .form-field input, .form-field textarea { font: inherit; font-size: 14px; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; resize: vertical; }
+  .form-submit { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 11px 20px; font-size: 14px; font-weight: 700; }
+  .form-submit:hover { background: #38346f; }
+  .form-note { font-size: 12.5px; color: var(--accent); margin-top: 10px; }
+
+  .tutorial-box { max-width: 480px; }
+  .tutorial-image { background: var(--accent-tint); border-radius: 12px; padding: 20px; display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
+  .tutorial-caption { font-size: 14px; line-height: 1.8; color: #333; min-height: 70px; }
+  .tutorial-dots { display: flex; justify-content: center; gap: 6px; margin: 16px 0; }
+  .tutorial-dot { width: 7px; height: 7px; border-radius: 50%; background: #ddd; }
+  .tutorial-dot.active { background: var(--accent); }
+  .tutorial-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .tutorial-nav button { border-radius: 8px; padding: 10px 18px; font-size: 13.5px; font-weight: 700; border: none; }
+  .tutorial-back { background: #ececef; color: #555; }
+  .tutorial-back:disabled { visibility: hidden; }
+  .tutorial-next { background: var(--accent); color: white; }
 </style>
 </head>
 <body>
@@ -101,7 +125,7 @@
     </div>
     <div class="mode-toggle" id="modeToggle">
       <button data-mode="all">すべての情報をみる</button>
-      <button data-mode="mine">じぶんの情報をみる</button>
+      <button data-mode="mine">カテゴリを絞ってみる</button>
     </div>
     <div class="cat-list" id="catList"></div>
   </div>
@@ -131,6 +155,54 @@
     <div class="modal-meta">
       <span id="modalMeta"></span>
       <a class="modal-source-link" id="modalSourceLink" href="#" target="_blank" rel="noopener">元記事を見る →</a>
+    </div>
+  </div>
+</div>
+
+<div class="fab-group">
+  <button class="fab-btn secondary" id="helpFab" aria-label="使い方を見る" title="使い方を見る">?</button>
+  <button class="fab-btn" id="feedbackFab" aria-label="フィードバックを送る" title="フィードバックを送る">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-4-1l-4.5 1 1-4.5a8.38 8.38 0 0 1-1-4A8.38 8.38 0 0 1 12.5 3a8.5 8.5 0 0 1 8.5 8.5z"/></svg>
+  </button>
+</div>
+
+<div class="modal-overlay hidden" id="feedbackOverlay">
+  <div class="modal-box">
+    <button class="modal-close" id="feedbackClose" aria-label="閉じる">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h3>使い勝手のフィードバック</h3>
+    <form id="feedbackForm">
+      <div class="form-field">
+        <label for="fbDepartment">部署</label>
+        <input id="fbDepartment" type="text" placeholder="例: 営業部">
+      </div>
+      <div class="form-field">
+        <label for="fbName">名前</label>
+        <input id="fbName" type="text" placeholder="例: 山田太郎">
+      </div>
+      <div class="form-field">
+        <label for="fbContent">内容<span style="color:#c00">*</span></label>
+        <textarea id="fbContent" rows="4" required placeholder="使いにくい点、欲しい機能など何でもどうぞ"></textarea>
+      </div>
+      <button type="submit" class="form-submit">送信</button>
+      <div class="form-note hidden" id="fbNote">送信しました。ありがとうございます。</div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="tutorialOverlay">
+  <div class="modal-box tutorial-box">
+    <button class="modal-close" id="tutorialClose" aria-label="閉じる">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h3>使い方ガイド</h3>
+    <div class="tutorial-image" id="tutorialImage"></div>
+    <div class="tutorial-caption" id="tutorialCaption"></div>
+    <div class="tutorial-dots" id="tutorialDots"></div>
+    <div class="tutorial-nav">
+      <button class="tutorial-back" id="tutorialBack">← 戻る</button>
+      <button class="tutorial-next" id="tutorialNext">次へ →</button>
     </div>
   </div>
 </div>
@@ -258,7 +330,7 @@ function reactionButtons(id) {
 function renderFeed() {
   const query = document.getElementById("searchInput").value.trim();
   const filtered = allItems.filter((item) => matchesFilters(item, query));
-  const modeLabel = viewMode === "mine" ? "じぶんの情報" : (activeCategory ? "カテゴリ: " + activeCategory : "すべての情報");
+  const modeLabel = viewMode === "mine" ? "絞り込み中" : (activeCategory ? "カテゴリ: " + activeCategory : "すべての情報");
   document.getElementById("statusLine").textContent = `${filtered.length}件 ／ ${modeLabel}`;
 
   const feed = document.getElementById("feed");
@@ -405,6 +477,99 @@ document.querySelectorAll("#modeToggle button").forEach((btn) => {
     renderSidebar();
     renderFeed();
   });
+});
+
+// --- フィードバック欄 ---
+const feedbackOverlay = document.getElementById("feedbackOverlay");
+document.getElementById("feedbackFab").addEventListener("click", () => feedbackOverlay.classList.remove("hidden"));
+document.getElementById("feedbackClose").addEventListener("click", () => feedbackOverlay.classList.add("hidden"));
+feedbackOverlay.addEventListener("click", (e) => { if (e.target === feedbackOverlay) feedbackOverlay.classList.add("hidden"); });
+
+document.getElementById("feedbackForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const department = document.getElementById("fbDepartment").value.trim();
+  const name = document.getElementById("fbName").value.trim();
+  const content = document.getElementById("fbContent").value.trim();
+  const note = document.getElementById("fbNote");
+  const submitBtn = e.target.querySelector(".form-submit");
+  submitBtn.disabled = true;
+  try {
+    const res = await fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ department, name, content })
+    });
+    if (!res.ok) throw new Error((await res.json()).error || "送信に失敗しました");
+    note.textContent = "送信しました。ありがとうございます。";
+    note.classList.remove("hidden");
+    document.getElementById("fbContent").value = "";
+    setTimeout(() => feedbackOverlay.classList.add("hidden"), 1200);
+  } catch (err) {
+    note.textContent = `送信に失敗しました: ${err.message}`;
+    note.classList.remove("hidden");
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+// --- 使い方ガイド ---
+const TUTORIAL_STEPS = [
+  {
+    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><rect x="4" y="30" width="192" height="40" rx="10" fill="#ececef"/><rect x="8" y="34" width="92" height="32" rx="8" fill="#4642A0"/><text x="54" y="55" font-size="11" fill="white" text-anchor="middle" font-weight="700">すべての情報</text><text x="150" y="55" font-size="11" fill="#777" text-anchor="middle">カテゴリを絞る</text></svg>`,
+    caption: "左上のタブで「すべての情報をみる」と「カテゴリを絞ってみる」を切り替えられます。"
+  },
+  {
+    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><rect x="4" y="4" width="192" height="102" rx="10" fill="white" stroke="#e6e6e8"/><rect x="12" y="14" width="176" height="20" rx="6" fill="rgba(70,66,160,0.12)"/><text x="24" y="28" font-size="11" fill="#4642A0" font-weight="700">資源相場</text><text x="24" y="54" font-size="11" fill="#555">リサイクル</text><text x="24" y="78" font-size="11" fill="#555">業界動向</text></svg>`,
+    caption: "「カテゴリを絞ってみる」では、興味のあるカテゴリにチェックを付けて、関連する記事だけを表示できます。"
+  },
+  {
+    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><rect x="10" y="40" width="180" height="32" rx="8" fill="white" stroke="#4642A0" stroke-width="2"/><circle cx="28" cy="56" r="6" fill="none" stroke="#999" stroke-width="2"/><text x="42" y="60" font-size="11" fill="#999">キーワードで検索</text></svg>`,
+    caption: "上部の検索ボックスで、タイトル・要約に含まれるキーワードから記事を絞り込めます。"
+  },
+  {
+    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><rect x="4" y="10" width="130" height="70" rx="8" fill="white" stroke="#e6e6e8"/><rect x="14" y="20" width="100" height="10" rx="3" fill="#333"/><rect x="14" y="36" width="110" height="7" rx="3" fill="#ccc"/><rect x="14" y="48" width="80" height="7" rx="3" fill="#ccc"/><path d="M140 45 L165 45" stroke="#4642A0" stroke-width="2" marker-end="url(#a)"/><defs><marker id="a" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#4642A0"/></marker></defs><rect x="166" y="14" width="30" height="62" rx="6" fill="rgba(70,66,160,0.12)" stroke="#4642A0"/></svg>`,
+    caption: "記事のタイトルや要約をクリックすると、省略されずに全文の要約がポップアップで読めます。"
+  },
+  {
+    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><rect x="20" y="8" width="160" height="94" rx="10" fill="white" stroke="#e6e6e8"/><rect x="32" y="20" width="100" height="9" rx="3" fill="#333"/><rect x="32" y="36" width="136" height="6" rx="3" fill="#ccc"/><rect x="32" y="48" width="136" height="6" rx="3" fill="#ccc"/><rect x="100" y="70" width="68" height="22" rx="6" fill="#4642A0"/><text x="134" y="85" font-size="10" fill="white" text-anchor="middle" font-weight="700">元記事を見る →</text></svg>`,
+    caption: "ポップアップ内の「元記事を見る」ボタンから、気になる記事だけ元のページに移動できます。"
+  },
+  {
+    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><rect x="40" y="35" width="50" height="40" rx="8" fill="rgba(70,66,160,0.1)"/><path d="M60 60v-12h-6l4-10 10 6-4 10h8" fill="none" stroke="#4642A0" stroke-width="2" stroke-linejoin="round"/><rect x="110" y="35" width="50" height="40" rx="8" fill="#f3f0fa"/><path d="M130 50v12h-6l4 10 10-6-4-10h8" fill="none" stroke="#999" stroke-width="2" stroke-linejoin="round"/></svg>`,
+    caption: "各記事の「使える / 不要」ボタンで評価できます。評価は今後の情報源・キーワードの改善に使います。"
+  },
+  {
+    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><circle cx="70" cy="55" r="26" fill="white" stroke="#4642A0" stroke-width="2"/><text x="70" y="62" font-size="22" fill="#4642A0" text-anchor="middle" font-weight="700">?</text><circle cx="140" cy="55" r="26" fill="#4642A0"/><path d="M128 50a12 12 0 1 1 10 12l-6 4 1-6a12 12 0 0 1-5-10z" fill="white"/></svg>`,
+    caption: "右下の「?」ボタンでこのガイドをいつでも見返せます。吹き出しボタンからは使い勝手のフィードバックを送れます。"
+  }
+];
+let tutorialStep = 0;
+
+function renderTutorialStep() {
+  const step = TUTORIAL_STEPS[tutorialStep];
+  document.getElementById("tutorialImage").innerHTML = step.svg;
+  document.getElementById("tutorialCaption").textContent = step.caption;
+  document.getElementById("tutorialDots").innerHTML = TUTORIAL_STEPS.map((_, i) =>
+    `<span class="tutorial-dot ${i === tutorialStep ? "active" : ""}"></span>`
+  ).join("");
+  document.getElementById("tutorialBack").disabled = tutorialStep === 0;
+  document.getElementById("tutorialNext").textContent = tutorialStep === TUTORIAL_STEPS.length - 1 ? "終了" : "次へ →";
+}
+
+const tutorialOverlay = document.getElementById("tutorialOverlay");
+document.getElementById("helpFab").addEventListener("click", () => {
+  tutorialStep = 0;
+  renderTutorialStep();
+  tutorialOverlay.classList.remove("hidden");
+});
+document.getElementById("tutorialClose").addEventListener("click", () => tutorialOverlay.classList.add("hidden"));
+tutorialOverlay.addEventListener("click", (e) => { if (e.target === tutorialOverlay) tutorialOverlay.classList.add("hidden"); });
+document.getElementById("tutorialBack").addEventListener("click", () => {
+  if (tutorialStep > 0) { tutorialStep--; renderTutorialStep(); }
+});
+document.getElementById("tutorialNext").addEventListener("click", () => {
+  if (tutorialStep < TUTORIAL_STEPS.length - 1) { tutorialStep++; renderTutorialStep(); }
+  else tutorialOverlay.classList.add("hidden");
 });
 
 loadItems();
