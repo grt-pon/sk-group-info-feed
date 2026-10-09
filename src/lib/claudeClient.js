@@ -148,3 +148,49 @@ export async function isMatchingPrimarySource({ headlineTitle, headlineOrg, cand
     throw new Error(`Claudeの出力をJSONとして解釈できませんでした: ${text}`);
   }
 }
+
+/**
+ * タイトルの文字列類似度(titleSimilarity.js)で「確認する価値がある」と絞り込んだ候補について、
+ * 本当に同じ具体的な出来事(同じプレスリリース・同じニュース)を指しているかを意味的に判定する。
+ * 「○○省、A地方フォーラムを開催」「○○省、B地方フォーラムを開催」のように、文面のテンプレートは
+ * 似ていても中身(対象地域・対象事業者等)が別物のケースを、文字列の近さだけでは区別できないため
+ * この確認を挟む。
+ * @param {{ titleA: string, titleB: string }} input
+ * @returns {Promise<boolean>}
+ */
+export async function isSameStory({ titleA, titleB }) {
+  const anthropic = getClient();
+
+  const prompt = `以下の2つの記事タイトルが、同じ具体的な出来事(同じプレスリリース・同じニュース)を
+報じたものかどうかを判定してください。
+言い回しのテンプレートが似ているだけで、対象地域・対象企業・対象事業などの中身が異なる場合
+(例: 「○○省がA地方でフォーラムを開催」と「○○省がB地方でフォーラムを開催」)は、
+同じ出来事ではない(same: false)と判定してください。
+
+出力は必ず次のJSON形式のみで返してください(説明文や前置きは不要):
+{"same": true または false}
+
+---
+タイトルA: ${titleA}
+タイトルB: ${titleB}
+`;
+
+  const response = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 100,
+    messages: [{ role: "user", content: prompt }]
+  });
+
+  const text = response.content
+    .filter((block) => block.type === "text")
+    .map((block) => block.text)
+    .join("\n")
+    .trim();
+
+  try {
+    const parsed = parseJsonResponse(text);
+    return parsed.same === true;
+  } catch (err) {
+    throw new Error(`Claudeの出力をJSONとして解釈できませんでした: ${text}`);
+  }
+}

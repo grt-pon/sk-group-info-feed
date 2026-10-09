@@ -1,6 +1,20 @@
 import { matchCategoriesByRule } from "../config/categoryRules.js";
-import { summarizeAndClassify } from "../lib/claudeClient.js";
-import { existsByUrl, saveItem } from "../lib/store.js";
+import { summarizeAndClassify, isSameStory } from "../lib/claudeClient.js";
+import { existsByUrl, saveItem, listItems } from "../lib/store.js";
+import { findSimilarCandidates } from "../lib/titleSimilarity.js";
+
+// 1回の収集実行(node scripts/runOnce.js)の中で、既存タイトルの一覧を使い回すためのキャッシュ。
+// 同じ実行内で追加された記事(例: 同じプレスリリースが別サイトに転載されたもの)も
+// 比較対象に含められるよう、保存するたびにこのキャッシュへも追記する。
+let titleCache = null;
+
+async function getTitleCache() {
+  if (!titleCache) {
+    const items = await listItems();
+    titleCache = items.map((item) => ({ id: item.id, title: item.title }));
+  }
+  return titleCache;
+}
 
 /**
  * 収集した1件の生データを、重複チェック→ルール分類→Claude要約/分類確定→保存、まで処理する。
@@ -36,6 +50,16 @@ export async function ingestItem(rawItem) {
     return { skipped: true, reason: "not_newsworthy" };
   }
 
+  // URLが違っても、同じプレスリリースが別サイトに転載されただけのケースをここで弾く。
+  const cache = await getTitleCache();
+  const candidates = findSimilarCandidates(cleanTitle, cache);
+  for (const candidate of candidates) {
+    const same = await isSameStory({ titleA: cleanTitle, titleB: candidate.title });
+    if (same) {
+      return { skipped: true, reason: "similar_title_duplicate" };
+    }
+  }
+
   const itemId = await saveItem({
     title: cleanTitle,
     summary,
@@ -46,6 +70,8 @@ export async function ingestItem(rawItem) {
     categories,
     publishedAt
   });
+
+  cache.push({ id: itemId, title: cleanTitle });
 
   return { skipped: false, itemId };
 }

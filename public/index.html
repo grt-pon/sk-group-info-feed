@@ -170,7 +170,9 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.5 2.5 0 1 1 3.5 2.3c-.9.5-1.5 1-1.5 2"/><circle cx="12" cy="16.8" r="0.6" fill="currentColor" stroke="none"/></svg>
         使い方
       </button>
-      <button class="sidebar-footer-btn" id="feedbackFab">
+      <!-- 一旦非表示。仕組み自体(モーダル・バックエンド)は残しているので、表示を戻す場合は
+           このコメントと直後のbuttonタグの hidden クラスを外すだけでよい。 -->
+      <button class="sidebar-footer-btn hidden" id="feedbackFab">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-4-1l-4.5 1 1-4.5a8.38 8.38 0 0 1-1-4A8.38 8.38 0 0 1 12.5 3a8.5 8.5 0 0 1 8.5 8.5z"/></svg>
         フィードバック
       </button>
@@ -840,8 +842,8 @@ const TUTORIAL_STEPS = [
     caption: "各記事について「参考になった/この情報は不要」を「👍/👎」ボタンで評価できます。評価は今後の情報源・キーワードの改善に使います。"
   },
   {
-    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><circle cx="25" cy="55" r="18" fill="white" stroke="#4642A0" stroke-width="2"/><text x="25" y="61" font-size="16" fill="#4642A0" text-anchor="middle" font-weight="700">?</text><circle cx="75" cy="55" r="18" fill="#4642A0"/><svg x="66" y="46" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-4-1l-4.5 1 1-4.5a8.38 8.38 0 0 1-1-4A8.38 8.38 0 0 1 12.5 3a8.5 8.5 0 0 1 8.5 8.5z"/></svg><circle cx="125" cy="55" r="18" fill="white" stroke="#4642A0" stroke-width="2"/><svg x="116" y="46" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4642A0" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg><circle cx="175" cy="55" r="18" fill="#4642A0"/><svg x="166" y="46" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></svg>`,
-    caption: "サイドバー下部の4つのボタンから、それぞれ以下が確認できます。\n・使い方: このガイドをいつでも見返せます\n・フィードバック: 使い勝手のご意見を送れます\n・更新履歴: これまでの機能追加・修正の記録\n・分析レポート: みなさんの「👍/👎」をもとに、AIが分析した改善案を確認できます",
+    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><circle cx="40" cy="55" r="20" fill="white" stroke="#4642A0" stroke-width="2"/><text x="40" y="62" font-size="18" fill="#4642A0" text-anchor="middle" font-weight="700">?</text><circle cx="100" cy="55" r="20" fill="white" stroke="#4642A0" stroke-width="2"/><svg x="90" y="45" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4642A0" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg><circle cx="160" cy="55" r="20" fill="#4642A0"/><svg x="150" y="45" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></svg>`,
+    caption: "サイドバー下部のボタンから、それぞれ以下が確認できます。\n・使い方: このガイドをいつでも見返せます\n・更新履歴: これまでの機能追加・修正の記録\n・分析レポート: みなさんの「👍/👎」をもとに、AIが分析した改善案を確認できます",
     note: "※FB内容に関して詳しくお伺いする場合がございます。また、投稿されたFBに対して対応内容等を返信する場合がございますが、返信されたことの通知は来ませんのでご注意ください。"
   }
 ];
