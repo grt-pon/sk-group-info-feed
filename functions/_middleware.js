@@ -40,7 +40,7 @@ function loginPage(errorMessage) {
     <h1>SKグループ情報フィード</h1>
     ${errorMessage ? `<div class="err">${errorMessage}</div>` : ""}
     <form method="POST" action="/__auth">
-      <input type="password" name="password" placeholder="合言葉" autofocus required>
+      <input type="password" name="password" placeholder="パスワード" autofocus required>
       <button type="submit">入る</button>
     </form>
   </div>
@@ -70,7 +70,7 @@ export async function onRequest(context) {
       );
       return new Response(null, { status: 302, headers });
     }
-    return new Response(loginPage("合言葉が正しくありません"), {
+    return new Response(loginPage("パスワードが正しくありません"), {
       status: 401,
       headers: { "Content-Type": "text/html; charset=utf-8" }
     });
