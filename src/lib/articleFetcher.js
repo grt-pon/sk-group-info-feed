@@ -34,6 +34,12 @@ async function fetchHtml(url) {
  * @param {cheerio.CheerioAPI} $
  * @returns {string | null} ISO文字列
  */
+// 未来の日付は「公開日」としてあり得ない(ページ内の別イベント告知等を誤って拾った可能性が高い)
+// ため、候補から除外する。多少の時計のずれを考慮して1日分の余裕を持たせる。
+function isPlausiblePastDate(d) {
+  return !isNaN(d.getTime()) && d.getTime() < Date.now() + 24 * 60 * 60 * 1000;
+}
+
 function extractPublishedDate($) {
   const metaCandidates = [
     'meta[property="article:published_time"]',
@@ -47,16 +53,14 @@ function extractPublishedDate($) {
     const content = $(selector).attr("content");
     if (content) {
       const d = new Date(content);
-      if (!isNaN(d.getTime())) return d.toISOString();
+      if (isPlausiblePastDate(d)) return d.toISOString();
     }
   }
 
-  const timeDatetime = $("time[datetime]").first().attr("datetime");
-  if (timeDatetime) {
-    const d = new Date(timeDatetime);
-    if (!isNaN(d.getTime())) return d.toISOString();
-  }
-
+  // JSON-LDは記事自身の構造化データなので、ページ内の最初の<time>要素より信頼できる
+  // (<time>はサイドバーの関連記事・別イベントの告知など、記事と無関係な日付を拾うことがあった。
+  //  実例: kankyo-business.jpの記事で、本文の公開日ではなく掲載されていた別イベントの開催日
+  //  2026-11-18を誤って採用し、未来日付として保存してしまった)。
   let jsonLdDate = null;
   $('script[type="application/ld+json"]').each((_, el) => {
     if (jsonLdDate) return;
@@ -66,7 +70,7 @@ function extractPublishedDate($) {
       for (const item of candidates) {
         if (item?.datePublished) {
           const d = new Date(item.datePublished);
-          if (!isNaN(d.getTime())) {
+          if (isPlausiblePastDate(d)) {
             jsonLdDate = d.toISOString();
             break;
           }
@@ -76,8 +80,15 @@ function extractPublishedDate($) {
       // JSON-LDのパース失敗は無視
     }
   });
+  if (jsonLdDate) return jsonLdDate;
 
-  return jsonLdDate;
+  const timeDatetime = $("time[datetime]").first().attr("datetime");
+  if (timeDatetime) {
+    const d = new Date(timeDatetime);
+    if (isPlausiblePastDate(d)) return d.toISOString();
+  }
+
+  return null;
 }
 
 /**
