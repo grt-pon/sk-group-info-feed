@@ -134,6 +134,16 @@ export const SOURCES = [
     note: "見出しは無料で見えるが本文は有料会員限定。関連しそうな見出しだけキーワードフィルタで拾い、見出しを手がかりに一次情報(プレスリリース等)をTavily+Claudeの検証付きで検索する。プレスリリースの方が先に出て報道が後追いすることがあるため検索期間は365日と長め。"
   },
   {
+    id: "note-paperpack-intel",
+    name: "note(paperpack_intel)",
+    url: "https://note.com/paperpack_intel",
+    type: "direct",
+    isPrimarySource: false,
+    checkFrequency: "daily",
+    status: "active",
+    note: "RSS(https://note.com/paperpack_intel/rss)から新着記事を取得する。個人発信のため一次情報としては扱わない。"
+  },
+  {
     id: "general-keyword-watch",
     name: "一般キーワード監視(Tavily)",
     url: null,

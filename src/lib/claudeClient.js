@@ -1,6 +1,7 @@
 import "dotenv/config";
 import Anthropic from "@anthropic-ai/sdk";
 import { CATEGORIES } from "../config/categories.js";
+import { WATCHED_LAWS } from "../config/watchedLaws.js";
 
 const MODEL = "claude-sonnet-5";
 
@@ -33,20 +34,24 @@ function getClient() {
  * 化けている・分かりにくい場合は本文から自然なタイトルを作り直す。
  *
  * @param {{ title: string, rawText: string, ruleCategories: string[] }} input
- * @returns {Promise<{ title: string, summary: string, categories: string[], isNewsworthy: boolean }>}
+ * @returns {Promise<{
+ *   title: string, summary: string, categories: string[], isNewsworthy: boolean,
+ *   isImportant: boolean, region: string, sourceType: string, isPaywalled: boolean
+ * }>}
  */
 export async function summarizeAndClassify({ title, rawText, ruleCategories }) {
   const anthropic = getClient();
 
   const prompt = `あなたは古紙・廃棄物業界の社内情報ポータル向けに記事を要約するアシスタントです。
-以下の記事を読み、次の4つを日本語で出力してください。
+以下の記事を読み、次の8つを出力してください。
 
-1. タイトル(記事内容を表す自然な日本語の見出し。元のタイトルが文字化けしている・意味不明・英語や記号だらけで内容が分からない場合は、本文から新しく作り直す。元のタイトルが正常に読めて内容も適切に表しているなら、それをそのまま使ってよい)
+1. タイトル(記事内容を表す自然な日本語の見出し。元のタイトルが文字化けしている・意味不明・英語や記号だらけで内容が分からない場合は、本文から新しく作り直す。元のタイトルが正常に読めて内容も適切に表しているなら、それをそのまま使ってよい。
+   重要: 本文で実際に述べられている範囲を超えて話を大きく見せる・煽るような見出しにしないこと。読者がタイトルだけを見て、実際の記事内容について誤った印象(実際より重大・確定的・断定的など)を持つことがないようにする)
 2. 要約(2〜3文。表示スペースが狭く、タイトルと要約の冒頭が同じ内容を繰り返すと無駄になるため、
    タイトルで既に分かる内容(見出しそのもの)は繰り返さず、1文目からタイトルに書かれていない
    具体的な情報(数値・背景・経緯・影響など)で始める。「発表内容→背景→影響」を意識しつつ、
    元文の言い回しをそのまま使わず自分の言葉で書く)
-3. カテゴリ(次の11個から、内容に合うものを1〜2個選ぶ): ${CATEGORIES.join("、")}
+3. カテゴリ(次の12個から、内容に合うものを1〜2個選ぶ): ${CATEGORIES.join("、")}
 4. ニュース価値の有無(isNewsworthy: true/false)。以下に該当する場合はfalseにする:
    - 「○○統計を更新しました」「需給速報を更新」のように、定例の統計・資料ページが更新されたという事実だけで、
      具体的な数値・変化・トレンドなど読者が持ち帰れる情報が本文中にない場合
@@ -66,11 +71,24 @@ export async function summarizeAndClassify({ title, rawText, ruleCategories }) {
      (業界への政策的な影響や、具体的に何が変わるのかの説明がないもの)
    具体的な数値や、何が起きた/決まった/変化したかが分かる内容であればtrueにする。
    (統計の更新であっても、本文に「回収率が81.3%になった」のような具体的な中身があればtrueでよい)
+   なお、パッカー車・収集車・清掃車・トラック等が関係する人身事故・死亡事故・火災は、
+   社内のドライバーへの注意喚起として重要なため、一企業の軽微な活動報告の例外として
+   常にisNewsworthy: trueとする(上記の「軽微な活動報告」の除外対象にはしない)。
+5. 重要度(isImportant: true/false)。次の監視対象法令について、実際に改正(法改正・政省令改正・
+   施行規則改正・施行日決定等)があったという具体的な内容である場合のみtrueにする。
+   単なる法解釈の説明・セミナー告知・過去の内容のおさらいはfalseとする:
+   ${WATCHED_LAWS.join("、")}
+6. 地域(region)。次のいずれか1つ: "仙台市"、"仙台経済圏"(仙台市近郊、例: 名取市・多賀城市・富谷市・利府町・大和町等)、"宮城県"(仙台市・仙台経済圏以外の宮城県内)、"東北"(青森・岩手・秋田・山形・福島の各県。宮城県以外)、"全国・海外"(特定地域に限定されない、または上記以外の地域)。
+   本文中に具体的な地名が出てこない場合は"全国・海外"とする。
+7. 発信者の種別(sourceType)。次のいずれか1つ: "官公庁"(国・都道府県・市区町村等)、"業界団体"(組合・協会・連合会等)、"企業"(企業の公式発表・プレスリリース・自社サイト記事)、"報道機関"(新聞社・通信社・ニュースメディアによる取材記事)、"個人・SNS"(個人のnote・ブログ・SNS投稿等)。
+8. 有料記事かどうか(isPaywalled: true/false)。本文が会員登録・購読契約をしないと続きが読めない状態で、
+   途中で本文が途切れている、または「続きを読むには」「この記事は有料会員限定です」等の案内がある場合はtrue。
+   本文を最後まで読める場合はfalse。
 
 キーワードルールによる一次判定では ${ruleCategories.length > 0 ? ruleCategories.join("、") : "該当なし"} が候補になっています。この候補を参考にしつつ、実際の内容に照らして最終的なカテゴリを判断してください(候補と異なってもよい)。
 
 出力は必ず次のJSON形式のみで返してください(説明文や前置きは不要):
-{"title": "...", "summary": "...", "categories": ["..."], "isNewsworthy": true}
+{"title": "...", "summary": "...", "categories": ["..."], "isNewsworthy": true, "isImportant": false, "region": "全国・海外", "sourceType": "企業", "isPaywalled": false}
 
 ---
 元のタイトル: ${title}
@@ -97,8 +115,60 @@ ${rawText}
       title: parsed.title || title,
       summary: parsed.summary,
       categories: Array.isArray(parsed.categories) ? parsed.categories : [],
-      isNewsworthy: parsed.isNewsworthy !== false
+      isNewsworthy: parsed.isNewsworthy !== false,
+      isImportant: parsed.isImportant === true,
+      region: parsed.region || "全国・海外",
+      sourceType: parsed.sourceType || "企業",
+      isPaywalled: parsed.isPaywalled === true
     };
+  } catch (err) {
+    throw new Error(`Claudeの出力をJSONとして解釈できませんでした: ${text}`);
+  }
+}
+
+/**
+ * 記事本文から品目別の相場(価格)情報を抽出する。相場推移グラフ(品目ごとの価格の時系列)の
+ * データソースとして使う。本文に具体的な数値が無い場合は空配列を返す。
+ * ingest.js側で、カテゴリに「資源相場」が含まれる記事に対してのみ呼び出す想定
+ * (関係ない記事にまでAPIを呼ぶコストを避けるため)。
+ * @param {{ title: string, rawText: string }} input
+ * @returns {Promise<Array<{ commodity: string, price: number, unit: string, priceDate: string | null }>>}
+ */
+export async function extractPricePoints({ title, rawText }) {
+  const anthropic = getClient();
+
+  const prompt = `以下の記事から、古紙・金属・プラスチック等の品目ごとの具体的な取引価格・相場を抽出してください。
+抽出条件:
+- 「○○(品目名)が1kgあたり○○円」のように、品目名と具体的な金額が明記されている箇所のみを対象とする
+- 「上昇した」「下落した」のような傾向の説明だけで金額が書かれていない場合は抽出しない
+- 本文中に価格の基準日・対象月が書かれていればpriceDateに"YYYY-MM-DD"形式で入れる(日が不明なら01とする)。書かれていなければnullとする
+- 複数の品目・時点があれば配列に複数件入れてよい。該当なしの場合は空配列を返す
+
+出力は必ず次のJSON形式のみで返してください(説明文や前置きは不要):
+{"points": [{"commodity": "段ボール古紙", "price": 25, "unit": "円/kg", "priceDate": "2026-11-01"}]}
+
+---
+タイトル: ${title}
+
+本文:
+${rawText}
+`;
+
+  const response = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 1024,
+    messages: [{ role: "user", content: prompt }]
+  });
+
+  const text = response.content
+    .filter((block) => block.type === "text")
+    .map((block) => block.text)
+    .join("\n")
+    .trim();
+
+  try {
+    const parsed = parseJsonResponse(text);
+    return Array.isArray(parsed.points) ? parsed.points : [];
   } catch (err) {
     throw new Error(`Claudeの出力をJSONとして解釈できませんでした: ${text}`);
   }

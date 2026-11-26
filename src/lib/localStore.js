@@ -69,3 +69,46 @@ export async function addReaction(itemId, reaction) {
 export async function listItems() {
   return await loadItems();
 }
+
+/**
+ * 記事から抽出した品目別の価格ポイントを保存する(相場推移グラフ用)。ローカル開発時は簡易ファイルに保存する。
+ * @param {string} itemId
+ * @param {Array<{ commodity: string, price: number, unit: string, priceDate: string | null }>} points
+ */
+export async function savePricePoints(itemId, points) {
+  if (!points || points.length === 0) return;
+  const file = path.join(DATA_DIR, "pricePoints.json");
+  const existing = existsSync(file) ? JSON.parse(await readFile(file, "utf-8")) : [];
+  const rows = points.map((p) => ({
+    itemId,
+    commodity: p.commodity,
+    price: p.price,
+    unit: p.unit ?? null,
+    priceDate: p.priceDate ?? new Date().toISOString().slice(0, 10)
+  }));
+  await mkdir(DATA_DIR, { recursive: true });
+  await writeFile(file, JSON.stringify([...existing, ...rows], null, 2), "utf-8");
+}
+
+/**
+ * 記事の閲覧回数を1増やす。
+ * @param {string} itemId
+ */
+export async function incrementViewCount(itemId) {
+  const items = await loadItems();
+  const item = items.find((i) => i.id === itemId);
+  if (!item) throw new Error(`ローカルストアに該当する記事が見つかりません: ${itemId}`);
+  item.viewCount = (item.viewCount ?? 0) + 1;
+  await persistItems(items);
+}
+
+/**
+ * サイト全体のページ閲覧ログを1件記録する(インプレッション分析レポート用)。
+ */
+export async function logPageView() {
+  const file = path.join(DATA_DIR, "pageViews.json");
+  const existing = existsSync(file) ? JSON.parse(await readFile(file, "utf-8")) : [];
+  existing.push({ viewedAt: new Date().toISOString() });
+  await mkdir(DATA_DIR, { recursive: true });
+  await writeFile(file, JSON.stringify(existing, null, 2), "utf-8");
+}

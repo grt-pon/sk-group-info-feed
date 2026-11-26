@@ -28,3 +28,6 @@ export const existsByUrl = backend.existsByUrl;
 export const saveItem = backend.saveItem;
 export const addReaction = backend.addReaction;
 export const listItems = backend.listItems;
+export const savePricePoints = backend.savePricePoints;
+export const incrementViewCount = backend.incrementViewCount;
+export const logPageView = backend.logPageView;

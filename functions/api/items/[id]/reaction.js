@@ -1,8 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 
 /**
- * POST /api/items/:id/reaction — 記事に対する「要る/要らない」反応を記録する。
- * 方針通り、この反応は一覧の表示には即時反映しない(蓄積してルール改善の材料にのみ使う想定)。
+ * POST /api/items/:id/reaction — 記事に対する「参考になった」反応を記録する。
+ * かつては「要る/要らない」の2択だったが、必要な情報は人によって違い「要らない」の
+ * 判定が難しいという声があったため、「参考になった」1つだけに変更した
+ * (過去データの"want"は引き続き「参考になった」として集計対象に含める)。
  */
 export async function onRequestPost(context) {
   const { env, params, request } = context;
@@ -16,8 +18,8 @@ export async function onRequestPost(context) {
   }
 
   const { judgement, userId = "web-user" } = body ?? {};
-  if (judgement !== "want" && judgement !== "not_want") {
-    return jsonResponse({ error: "judgement は 'want' か 'not_want' である必要があります" }, 400);
+  if (judgement !== "useful") {
+    return jsonResponse({ error: "judgement は 'useful' である必要があります" }, 400);
   }
 
   const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);

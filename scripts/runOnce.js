@@ -11,6 +11,7 @@ import { collectMiyagi } from "../src/collectors/direct/miyagi.js";
 import { collectSendai } from "../src/collectors/direct/sendai.js";
 import { collectNikkeiLocalTohoku } from "../src/collectors/keyword/nikkeiLocal.js";
 import { collectKosijnl } from "../src/collectors/direct/kosijnl.js";
+import { collectNotePaperpackIntel } from "../src/collectors/direct/notePaperpackIntel.js";
 
 // 未実装のものも並べておき、実装が進んだらここに手を加えずそのまま動くようにする。
 const COLLECTORS = [
@@ -26,7 +27,8 @@ const COLLECTORS = [
   { name: "古紙ジャーナル", run: collectKosijnl },
   { name: "宮城県", run: collectMiyagi },
   { name: "仙台市", run: collectSendai },
-  { name: "日経地域面(東北)", run: collectNikkeiLocalTohoku }
+  { name: "日経地域面(東北)", run: collectNikkeiLocalTohoku },
+  { name: "note(paperpack_intel)", run: collectNotePaperpackIntel }
 ];
 
 async function main() {

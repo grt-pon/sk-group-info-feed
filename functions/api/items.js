@@ -32,7 +32,12 @@ export async function onRequestGet(context) {
     categories: row.categories,
     publishedAt: row.published_at,
     collectedAt: row.collected_at,
-    reactions: row.reactions ?? []
+    reactions: row.reactions ?? [],
+    isImportant: row.is_important ?? false,
+    region: row.region ?? "全国・海外",
+    sourceType: row.source_type ?? "企業",
+    isPaywalled: row.is_paywalled ?? false,
+    viewCount: row.view_count ?? 0
   }));
 
   return jsonResponse(items);

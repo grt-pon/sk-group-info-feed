@@ -54,12 +54,68 @@ export async function saveItem(item) {
       is_primary_source: item.isPrimarySource,
       categories: item.categories,
       published_at: item.publishedAt,
-      collected_at: new Date().toISOString()
+      collected_at: new Date().toISOString(),
+      is_important: item.isImportant ?? false,
+      region: item.region ?? "全国・海外",
+      source_type: item.sourceType ?? "企業",
+      is_paywalled: item.isPaywalled ?? false
     })
     .select("id")
     .single();
   if (error) throw new Error(`Supabaseへの保存に失敗しました: ${error.message}`);
   return data.id;
+}
+
+/**
+ * 記事から抽出した品目別の価格ポイントを保存する(相場推移グラフ用)。
+ * 記事本体(items)は1ヶ月で自動削除されるが、price_pointsは別テーブルで独立して保存し、
+ * 記事が消えても相場の推移データは残るようにする。
+ * @param {string} itemId
+ * @param {Array<{ commodity: string, price: number, unit: string, priceDate: string | null }>} points
+ */
+export async function savePricePoints(itemId, points) {
+  if (!points || points.length === 0) return;
+  const supabase = getClient();
+  const rows = points.map((p) => ({
+    item_id: itemId,
+    commodity: p.commodity,
+    price: p.price,
+    unit: p.unit ?? null,
+    price_date: p.priceDate ?? new Date().toISOString().slice(0, 10)
+  }));
+  const { error } = await supabase.from("price_points").insert(rows);
+  if (error) throw new Error(`相場データの保存に失敗しました: ${error.message}`);
+}
+
+/**
+ * 記事の閲覧回数を1増やす(「社内で注目されているニュース」ランキング用)。
+ * 読み取り→更新のため、同時アクセスが重なった場合に1〜2件ずれる可能性はあるが、
+ * アクセス規模を踏まえ許容する(reactions追記と同じ考え方)。
+ * @param {string} itemId
+ */
+export async function incrementViewCount(itemId) {
+  const supabase = getClient();
+  const { data: row, error: readError } = await supabase
+    .from("items")
+    .select("view_count")
+    .eq("id", itemId)
+    .single();
+  if (readError) throw new Error(`該当する記事が見つかりません: ${readError.message}`);
+
+  const { error: writeError } = await supabase
+    .from("items")
+    .update({ view_count: (row.view_count ?? 0) + 1 })
+    .eq("id", itemId);
+  if (writeError) throw new Error(`閲覧回数の更新に失敗しました: ${writeError.message}`);
+}
+
+/**
+ * サイト全体のページ閲覧ログを1件記録する(インプレッション分析レポート用)。
+ */
+export async function logPageView() {
+  const supabase = getClient();
+  const { error } = await supabase.from("page_views").insert({});
+  if (error) throw new Error(`アクセスログの記録に失敗しました: ${error.message}`);
 }
 
 /**
@@ -105,6 +161,11 @@ export async function listItems() {
     categories: row.categories,
     publishedAt: row.published_at,
     collectedAt: row.collected_at,
-    reactions: row.reactions ?? []
+    reactions: row.reactions ?? [],
+    isImportant: row.is_important ?? false,
+    region: row.region ?? "全国・海外",
+    sourceType: row.source_type ?? "企業",
+    isPaywalled: row.is_paywalled ?? false,
+    viewCount: row.view_count ?? 0
   }));
 }

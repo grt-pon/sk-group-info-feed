@@ -1,6 +1,6 @@
 import { matchCategoriesByRule } from "../config/categoryRules.js";
-import { summarizeAndClassify, isSameStory } from "../lib/claudeClient.js";
-import { existsByUrl, saveItem, listItems } from "../lib/store.js";
+import { summarizeAndClassify, isSameStory, extractPricePoints } from "../lib/claudeClient.js";
+import { existsByUrl, saveItem, listItems, savePricePoints } from "../lib/store.js";
 import { findSimilarCandidates } from "../lib/titleSimilarity.js";
 
 // 1回の収集実行(node scripts/runOnce.js)の中で、既存タイトルの一覧を使い回すためのキャッシュ。
@@ -40,7 +40,16 @@ export async function ingestItem(rawItem) {
   }
 
   const ruleCategories = matchCategoriesByRule(`${title}\n${rawText}`);
-  const { title: cleanTitle, summary, categories, isNewsworthy } = await summarizeAndClassify({
+  const {
+    title: cleanTitle,
+    summary,
+    categories,
+    isNewsworthy,
+    isImportant,
+    region,
+    sourceType,
+    isPaywalled
+  } = await summarizeAndClassify({
     title,
     rawText,
     ruleCategories
@@ -68,10 +77,25 @@ export async function ingestItem(rawItem) {
     sourceName,
     isPrimarySource,
     categories,
-    publishedAt
+    publishedAt,
+    isImportant,
+    region,
+    sourceType,
+    isPaywalled
   });
 
   cache.push({ id: itemId, title: cleanTitle });
+
+  // 相場推移グラフ用に、品目別の価格を抽出して別テーブルに保存する。
+  // コストを抑えるため「資源相場」カテゴリが付いた記事に対してのみ呼び出す。
+  if (categories.includes("資源相場")) {
+    try {
+      const pricePoints = await extractPricePoints({ title: cleanTitle, rawText });
+      await savePricePoints(itemId, pricePoints);
+    } catch (err) {
+      console.error(`[price-points] 抽出・保存に失敗しました(記事は保存済み): ${err.message}`);
+    }
+  }
 
   return { skipped: false, itemId };
 }

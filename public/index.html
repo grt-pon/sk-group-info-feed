@@ -145,6 +145,29 @@
   .tutorial-back { background: #ececef; color: #555; }
   .tutorial-back:disabled { visibility: hidden; }
   .tutorial-next { background: var(--accent); color: white; }
+
+  .region-block { display: flex; flex-direction: column; gap: 8px; }
+  .region-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .region-pill { border: 1px solid #ddd; background: white; color: #555; font-size: 12px; padding: 5px 11px; border-radius: 999px; }
+  .region-pill:hover { border-color: var(--accent); color: var(--accent); }
+  .region-pill.active { background: var(--accent); border-color: var(--accent); color: white; font-weight: 700; }
+
+  .label-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+  .label-chip { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 5px; white-space: nowrap; }
+  .label-important { background: #c0392b; color: white; }
+  .label-source-type { background: #ececef; color: #666; }
+  .label-paywall { background: #fff3cd; color: #8a6d00; }
+
+  .ranking-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; }
+  .ranking-card { background: white; border: 1px solid #e6e6e8; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .ranking-rank { font-size: 18px; font-weight: 900; color: var(--accent); }
+  .ranking-title { margin: 0; font-size: 12px; font-weight: 700; line-height: 1.45; color: #1c1c1c; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .ranking-views { margin-top: auto; font-size: 10.5px; color: #999; }
+
+  .price-chart-item { padding: 14px 0; border-bottom: 1px solid #efeff1; }
+  .price-chart-item:last-child { border-bottom: none; }
+  .price-chart-title { font-size: 13.5px; font-weight: 700; margin-bottom: 6px; }
+  .price-chart-latest { font-size: 11.5px; color: #999; margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -165,6 +188,10 @@
       <button data-mode="mine">カテゴリを絞ってみる</button>
     </div>
     <div class="cat-list" id="catList"></div>
+    <div class="region-block">
+      <div class="my-cat-header"><span>地域で絞る</span></div>
+      <div class="region-list" id="regionList"></div>
+    </div>
     <div class="sidebar-footer">
       <button class="sidebar-footer-btn" id="helpFab">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.5 2.5 0 1 1 3.5 2.3c-.9.5-1.5 1-1.5 2"/><circle cx="12" cy="16.8" r="0.6" fill="currentColor" stroke="none"/></svg>
@@ -183,6 +210,14 @@
       <button class="sidebar-footer-btn" id="analysisFab">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
         分析レポート
+      </button>
+      <button class="sidebar-footer-btn" id="priceChartFab">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l3-4 3 2 4-6"/></svg>
+        相場推移
+      </button>
+      <button class="sidebar-footer-btn" id="accessReportFab">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg>
+        アクセスレポート
       </button>
     </div>
   </div>
@@ -207,6 +242,7 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
     <span class="modal-kicker" id="modalKicker"></span>
+    <div id="modalLabels" style="margin-top:6px;"></div>
     <h3 id="modalTitle"></h3>
     <p id="modalSummary"></p>
     <div class="modal-meta">
@@ -275,8 +311,30 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
     <h3>分析レポート</h3>
-    <p style="font-size:12px; color:#999; margin-top:-8px;">「使える/不要」の反応傾向をAIが週次で分析したものです。ここに書かれた提案は自動では反映されません。</p>
+    <p style="font-size:12px; color:#999; margin-top:-8px;">「参考になった」反応・閲覧回数の傾向をAIが週次で分析したものです。ここに書かれた提案は自動では反映されません。</p>
     <div id="analysisList"></div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="priceChartOverlay">
+  <div class="modal-box">
+    <button class="modal-close" id="priceChartClose" aria-label="閉じる">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h3>品目別 相場推移</h3>
+    <p style="font-size:12px; color:#999; margin-top:-8px;">記事から自動抽出した価格です。記事に具体的な金額が書かれていない月は欠測になります。記事本体は1ヶ月で削除されますが、このデータは長期保存されます。</p>
+    <div id="priceChartList"></div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="accessReportOverlay">
+  <div class="modal-box">
+    <button class="modal-close" id="accessReportClose" aria-label="閉じる">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h3>アクセスレポート</h3>
+    <p style="font-size:12px; color:#999; margin-top:-8px;">サイトの閲覧状況を日次で集計したものです。</p>
+    <div id="accessReportList"></div>
   </div>
 </div>
 
@@ -291,11 +349,13 @@
 </div>
 
 <script>
-const CATEGORIES = ["行政・法改正","企業の取り組み","リサイクル","産廃・処理業","資源相場","AI・DX","海外","電子マニフェスト","行政処分","事件・事故","業界動向"];
-const HUE = { "行政・法改正":250, "企業の取り組み":200, "リサイクル":165, "産廃・処理業":90, "資源相場":45, "AI・DX":290, "海外":320, "電子マニフェスト":230, "行政処分":15, "事件・事故":25, "業界動向":130 };
+const CATEGORIES = ["行政・法改正","企業の取り組み","リサイクル","産廃・処理業","資源相場","AI・DX","海外","電子マニフェスト","行政処分","事件・事故","業界動向","車両・モビリティ"];
+const HUE = { "行政・法改正":250, "企業の取り組み":200, "リサイクル":165, "産廃・処理業":90, "資源相場":45, "AI・DX":290, "海外":320, "電子マニフェスト":230, "行政処分":15, "事件・事故":25, "業界動向":130, "車両・モビリティ":210 };
+const REGIONS = ["仙台市", "仙台経済圏", "宮城県", "東北", "全国・海外"];
 
 let allItems = [];
 let activeCategory = null;
+let activeRegion = null;
 let viewMode = localStorage.getItem("skinfo_viewMode") || "all";
 let myCategories = new Set(JSON.parse(localStorage.getItem("skinfo_myCategories") || "[]"));
 
@@ -380,6 +440,7 @@ function renderSidebar() {
         renderFeed();
       });
     });
+    renderRegionList();
     return;
   }
 
@@ -395,6 +456,24 @@ function renderSidebar() {
       renderFeed();
     });
   });
+
+  renderRegionList();
+}
+
+function renderRegionList() {
+  const regionList = document.getElementById("regionList");
+  const rows = [`<button class="region-pill ${activeRegion === null ? "active" : ""}" data-region="">すべて</button>`];
+  for (const region of REGIONS) {
+    rows.push(`<button class="region-pill ${activeRegion === region ? "active" : ""}" data-region="${region}">${region}</button>`);
+  }
+  regionList.innerHTML = rows.join("");
+  regionList.querySelectorAll(".region-pill").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      activeRegion = btn.dataset.region || null;
+      renderRegionList();
+      renderFeed();
+    });
+  });
 }
 
 function matchesFilters(item, query) {
@@ -404,6 +483,7 @@ function matchesFilters(item, query) {
   } else if (activeCategory && !(item.categories || []).includes(activeCategory)) {
     return false;
   }
+  if (activeRegion && item.region !== activeRegion) return false;
   if (!query) return true;
   const haystack = `${item.title} ${item.summary}`.toLowerCase();
   return haystack.includes(query.toLowerCase());
@@ -411,24 +491,33 @@ function matchesFilters(item, query) {
 
 function reactionCounts(item) {
   // 同じ人の連打で水増しされないよう、userId(ブラウザごとの簡易ID)の重複を除いて数える。
-  const want = new Set((item.reactions || []).filter((r) => r.judgement === "want").map((r) => r.userId)).size;
-  const notWant = new Set((item.reactions || []).filter((r) => r.judgement === "not_want").map((r) => r.userId)).size;
-  return { want, notWant };
+  // 「要る/要らない」の2択だった頃の過去データ(judgement: "want")も、
+  // 「参考になった」として引き続きカウントする。
+  const useful = new Set(
+    (item.reactions || []).filter((r) => r.judgement === "useful" || r.judgement === "want").map((r) => r.userId)
+  ).size;
+  return { useful };
 }
 
 function reactionButtons(item) {
-  const { want, notWant } = reactionCounts(item);
+  const { useful } = reactionCounts(item);
   return `
     <div class="actions">
-      <button data-id="${item.id}" data-judgement="want" title="使える">
+      <button data-id="${item.id}" data-judgement="useful" title="参考になった">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3z"/><path d="M7 11l3.5-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 1.9 2.6l-1.8 6A2 2 0 0 1 16.2 20H9a2 2 0 0 1-2-2"/></svg>
-        <span class="reaction-count">${want}</span>
-      </button>
-      <button data-id="${item.id}" data-judgement="not_want" title="不要">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="transform:scaleY(-1)"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3z"/><path d="M7 11l3.5-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 1.9 2.6l-1.8 6A2 2 0 0 1 16.2 20H9a2 2 0 0 1-2-2"/></svg>
-        <span class="reaction-count">${notWant}</span>
+        <span class="reaction-count">${useful}</span>
       </button>
     </div>`;
+}
+
+// 発信者種別・有料記事・重要(法改正)のラベルをまとめて表示する。
+function labelRow(item) {
+  const chips = [];
+  if (item.isImportant) chips.push(`<span class="label-chip label-important">重要</span>`);
+  if (item.sourceType) chips.push(`<span class="label-chip label-source-type">${escapeHtml(item.sourceType)}</span>`);
+  if (item.isPaywalled) chips.push(`<span class="label-chip label-paywall">有料記事</span>`);
+  if (chips.length === 0) return "";
+  return `<div class="label-row">${chips.join("")}</div>`;
 }
 
 function renderFeed() {
@@ -450,8 +539,27 @@ function renderFeed() {
   const pickups = filtered.slice(1, 7);
   const rest = filtered.slice(7);
 
+  // 社内で注目されているニュース(閲覧回数トップ5)。押す手間のある反応より、
+  // 自動で貯まる閲覧回数のほうがサンプルを集めやすいという判断でこちらを主指標にした。
+  const ranked = [...filtered].filter((i) => (i.viewCount || 0) > 0).sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0)).slice(0, 5);
+  let html = "";
+  if (ranked.length > 0) {
+    html += `
+    <div style="display:flex; flex-direction:column; gap:14px; margin-bottom:30px;">
+      <div class="section-head"><span><span class="num">00</span><h2>社内で注目されているニュース</h2></span></div>
+      <div class="ranking-grid">
+        ${ranked.map((item, i) => `
+          <div class="ranking-card clickable" data-detail-id="${item.id}">
+            <span class="ranking-rank">${i + 1}</span>
+            <p class="ranking-title">${escapeHtml(item.title)}</p>
+            <span class="ranking-views">閲覧 ${item.viewCount || 0}回</span>
+          </div>`).join("")}
+      </div>
+    </div>`;
+  }
+
   const heroCat = primaryCategory(hero);
-  let html = `
+  html += `
     <div style="display:flex; flex-direction:column; gap:16px; margin-bottom:30px;">
       <div class="section-head"><span><span class="num">01</span><h2>注目</h2></span></div>
       <div class="hero">
@@ -460,6 +568,7 @@ function renderFeed() {
         </div>
         <div class="hero-body">
           <span class="kicker" style="color:${catColor(heroCat, "text")}">${heroCat}</span>
+          ${labelRow(hero)}
           <div class="clickable" data-detail-id="${hero.id}">
             <h3>${escapeHtml(hero.title)}</h3>
             <p>${escapeHtml(hero.summary)}</p>
@@ -487,6 +596,7 @@ function renderFeed() {
             <div class="pickup-strip" style="background:${catColor(cat, "bar")}"></div>
             <div class="pickup-body">
               <span class="kicker" style="font-size:11px; color:${catColor(cat, "text")}">${cat}</span>
+              ${labelRow(item)}
               <div class="clickable" data-detail-id="${item.id}">
                 <h4>${escapeHtml(item.title)}</h4>
                 <p>${escapeHtml(item.summary)}</p>
@@ -515,6 +625,7 @@ function renderFeed() {
             <div class="news-bar" style="background:${catColor(cat, "bar")}"></div>
             <div class="news-main clickable" data-detail-id="${item.id}">
               <span class="news-cat" style="color:${catColor(cat, "text")}">${cat}</span>
+              ${labelRow(item)}
               <p class="news-title">${escapeHtml(item.title)}</p>
               <p class="news-summary">${escapeHtml(item.summary)}</p>
               <div class="news-meta"><span>${escapeHtml(item.sourceName)}</span><span>${formatDate(item.publishedAt) || "日付不明"}</span></div>
@@ -547,9 +658,8 @@ function renderFeed() {
       const item = allItems.find((i) => i.id === id);
       if (item) {
         item.reactions = [...(item.reactions || []), { userId: getClientId(), judgement, reactedAt: new Date().toISOString() }];
-        const { want, notWant } = reactionCounts(item);
-        document.querySelectorAll(`[data-id="${id}"][data-judgement="want"] .reaction-count`).forEach((el) => { el.textContent = want; });
-        document.querySelectorAll(`[data-id="${id}"][data-judgement="not_want"] .reaction-count`).forEach((el) => { el.textContent = notWant; });
+        const { useful } = reactionCounts(item);
+        document.querySelectorAll(`[data-id="${id}"][data-judgement="useful"] .reaction-count`).forEach((el) => { el.textContent = useful; });
       }
     });
   });
@@ -561,12 +671,17 @@ function openDetail(id) {
   const cat = primaryCategory(item);
   document.getElementById("modalKicker").textContent = cat;
   document.getElementById("modalKicker").style.color = catColor(cat, "text");
+  document.getElementById("modalLabels").innerHTML = labelRow(item);
   document.getElementById("modalTitle").textContent = item.title;
   document.getElementById("modalSummary").textContent = item.summary;
   document.getElementById("modalMeta").textContent =
-    `${item.sourceName}${item.isPrimarySource ? "・一次情報" : ""} ／ ${formatDate(item.publishedAt) || "日付不明"}`;
+    `${item.sourceName}${item.isPrimarySource ? "・一次情報" : ""} ／ ${formatDate(item.publishedAt) || "日付不明"} ／ ${item.region || "全国・海外"}`;
   document.getElementById("modalSourceLink").href = item.sourceUrl;
   document.getElementById("modalOverlay").classList.remove("hidden");
+
+  // 「社内で注目されているニュース」ランキング用に閲覧回数を1増やす(失敗しても表示には影響させない)。
+  item.viewCount = (item.viewCount || 0) + 1;
+  fetch(`/api/items/${id}/view`, { method: "POST" }).catch(() => {});
 }
 
 function closeDetail() {
@@ -584,6 +699,8 @@ document.addEventListener("keydown", (e) => {
   document.getElementById("tutorialOverlay").classList.add("hidden");
   document.getElementById("changelogOverlay").classList.add("hidden");
   document.getElementById("analysisOverlay").classList.add("hidden");
+  document.getElementById("priceChartOverlay").classList.add("hidden");
+  document.getElementById("accessReportOverlay").classList.add("hidden");
 });
 
 document.getElementById("searchInput").addEventListener("input", renderFeed);
@@ -838,13 +955,21 @@ const TUTORIAL_STEPS = [
     caption: "ポップアップ内の「元記事を見る」ボタンから、気になる記事だけ元のページに移動できます。"
   },
   {
-    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><rect x="40" y="35" width="50" height="40" rx="8" fill="rgba(70,66,160,0.1)"/><svg x="53" y="43" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4642A0" stroke-width="1.8"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3z"/><path d="M7 11l3.5-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 1.9 2.6l-1.8 6A2 2 0 0 1 16.2 20H9a2 2 0 0 1-2-2"/></svg><rect x="110" y="35" width="50" height="40" rx="8" fill="#f3f0fa"/><svg x="123" y="43" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.8" style="transform:scaleY(-1);transform-origin:center;"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3z"/><path d="M7 11l3.5-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 1.9 2.6l-1.8 6A2 2 0 0 1 16.2 20H9a2 2 0 0 1-2-2"/></svg></svg>`,
-    caption: "各記事について「参考になった/この情報は不要」を「👍/👎」ボタンで評価できます。評価は今後の情報源・キーワードの改善に使います。"
+    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><rect x="60" y="35" width="80" height="40" rx="8" fill="rgba(70,66,160,0.1)"/><svg x="78" y="43" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4642A0" stroke-width="1.8"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3z"/><path d="M7 11l3.5-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 1.9 2.6l-1.8 6A2 2 0 0 1 16.2 20H9a2 2 0 0 1-2-2"/></svg><text x="118" y="60" font-size="13" fill="#4642A0" font-weight="700">12</text></svg>`,
+    caption: "各記事について「参考になった」を押せます。必要な情報は人によって違うため「不要」の判定はせず、押された回数・閲覧された回数を「社内で注目されているニュース」の目安に使います。"
+  },
+  {
+    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><rect x="4" y="4" width="192" height="30" rx="8" fill="#c0392b"/><text x="100" y="24" font-size="12" fill="white" text-anchor="middle" font-weight="700">重要(法改正)</text><rect x="4" y="44" width="192" height="30" rx="8" fill="#ececef"/><text x="100" y="64" font-size="12" fill="#666" text-anchor="middle">官公庁 ／ 有料記事</text><rect x="4" y="84" width="192" height="20" rx="6" fill="white" stroke="#ddd"/><text x="100" y="98" font-size="10" fill="#999" text-anchor="middle">仙台市 ／ 宮城県 ／ 東北 等のタブで地域を絞り込み</text></svg>`,
+    caption: "記事には「重要(法改正)」「有料記事」などのラベルや、地域タブ(仙台市・宮城県・東北 等)が付きます。中身を開かなくても、記事の性質がひと目で分かるようにしています。"
   },
   {
     svg: `<svg width="200" height="110" viewBox="0 0 200 110"><circle cx="40" cy="55" r="20" fill="white" stroke="#4642A0" stroke-width="2"/><text x="40" y="62" font-size="18" fill="#4642A0" text-anchor="middle" font-weight="700">?</text><circle cx="100" cy="55" r="20" fill="white" stroke="#4642A0" stroke-width="2"/><svg x="90" y="45" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4642A0" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg><circle cx="160" cy="55" r="20" fill="#4642A0"/><svg x="150" y="45" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></svg>`,
-    caption: "サイドバー下部のボタンから、それぞれ以下が確認できます。\n・使い方: このガイドをいつでも見返せます\n・更新履歴: これまでの機能追加・修正の記録\n・分析レポート: みなさんの「👍/👎」をもとに、AIが分析した改善案を確認できます",
-    note: "※FB内容に関して詳しくお伺いする場合がございます。また、投稿されたFBに対して対応内容等を返信する場合がございますが、返信されたことの通知は来ませんのでご注意ください。"
+    caption: "サイドバー下部のボタンから、それぞれ以下が確認できます。\n・使い方: このガイドをいつでも見返せます\n・更新履歴: これまでの機能追加・修正の記録\n・分析レポート: 「参考になった」反応・閲覧回数をもとに、AIが分析した改善案を確認できます\n・相場推移: 品目別の価格推移グラフ\n・アクセスレポート: サイトの閲覧状況"
+  },
+  {
+    svg: `<svg width="200" height="110" viewBox="0 0 200 110"><circle cx="100" cy="45" r="22" fill="none" stroke="#c0392b" stroke-width="2"/><path d="M100 35v12" stroke="#c0392b" stroke-width="2.5" stroke-linecap="round"/><circle cx="100" cy="54" r="1.6" fill="#c0392b"/><text x="100" y="95" font-size="11" fill="#777" text-anchor="middle">保存期間: 1ヶ月</text></svg>`,
+    caption: "記事は公開から1ヶ月で自動的に削除されます。気になったニュースは、元記事のリンクをブックマークしておくことをおすすめします。",
+    note: "※ご不明な点があれば、いつでもお気軽にお尋ねください。"
   }
 ];
 let tutorialStep = 0;
@@ -880,6 +1005,22 @@ document.getElementById("tutorialNext").addEventListener("click", () => {
 // --- 更新履歴 ---
 // 機能追加・修正のたびにここへ追記していく(新しいものを先頭に)。
 const CHANGELOG = [
+  {
+    date: "2026-11-26",
+    items: [
+      "「使える/不要」の2択を廃止し、「参考になった」1つのボタンに変更(必要な情報は人によって違うため)",
+      "記事の閲覧回数を記録し、「社内で注目されているニュース」(閲覧回数トップ5)を一覧の先頭に表示",
+      "法改正の監視を追加。監視対象の法令に実際の改正があった記事には「重要」ラベルを表示",
+      "記事に発信者種別(官公庁・業界団体・企業・報道機関・個人/SNS)・有料記事ラベルを表示",
+      "地域タブ(仙台市・仙台経済圏・宮城県・東北・全国海外)を追加し、地域で絞り込み可能に",
+      "車両・モビリティ(次世代エネルギー車両の動向)、パッカー車・トラック事故情報を新カテゴリとして追加(事故情報は一企業の軽微な活動報告の対象外ルールから除外し、必ず拾うよう変更)",
+      "note(paperpack_intel)を情報源として追加",
+      "品目別の相場推移グラフ(「相場推移」ボタン)を追加。記事本体とは別に長期保存",
+      "サイトのアクセス状況を日次で集計する「アクセスレポート」を追加",
+      "記事の保存期間を1ヶ月に設定し、超過分を自動削除するように変更",
+      "タイトルが本文の内容を誇張しないよう要約生成のルールを強化"
+    ]
+  },
   {
     date: "2026-10-09",
     items: [
@@ -985,6 +1126,87 @@ function showConfirm(message) {
     confirmOverlay.addEventListener("click", onOverlay);
   });
 }
+
+// --- 相場推移(品目別グラフ) ---
+const priceChartOverlay = document.getElementById("priceChartOverlay");
+document.getElementById("priceChartFab").addEventListener("click", async () => {
+  priceChartOverlay.classList.remove("hidden");
+  const list = document.getElementById("priceChartList");
+  list.innerHTML = `<div class="fb-empty">読み込み中...</div>`;
+  try {
+    const res = await fetch("/api/price-points");
+    const points = await res.json();
+    if (points.length === 0) {
+      list.innerHTML = `<div class="fb-empty">まだデータがありません(記事から具体的な価格が見つかると自動で蓄積されます)</div>`;
+      return;
+    }
+    const byCommodity = new Map();
+    for (const p of points) {
+      if (!byCommodity.has(p.commodity)) byCommodity.set(p.commodity, []);
+      byCommodity.get(p.commodity).push(p);
+    }
+    list.innerHTML = [...byCommodity.entries()].map(([commodity, series]) => {
+      const sorted = [...series].sort((a, b) => new Date(a.priceDate) - new Date(b.priceDate));
+      const latest = sorted[sorted.length - 1];
+      return `
+        <div class="price-chart-item">
+          <div class="price-chart-title">${escapeHtml(commodity)}</div>
+          ${sparkline(sorted)}
+          <div class="price-chart-latest">直近: ${latest.price}${escapeHtml(latest.unit || "")}(${latest.priceDate})</div>
+        </div>`;
+    }).join("");
+  } catch {
+    list.innerHTML = `<div class="fb-empty">読み込みに失敗しました</div>`;
+  }
+});
+document.getElementById("priceChartClose").addEventListener("click", () => priceChartOverlay.classList.add("hidden"));
+priceChartOverlay.addEventListener("click", (e) => { if (e.target === priceChartOverlay) priceChartOverlay.classList.add("hidden"); });
+
+// 品目ごとの価格推移を簡易な折れ線(SVG)で描く。ライブラリを使うほどの規模ではないため自前実装。
+function sparkline(series) {
+  const w = 460, h = 70, pad = 6;
+  if (series.length === 1) {
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><circle cx="${w / 2}" cy="${h / 2}" r="3" fill="#4642A0"/></svg>`;
+  }
+  const prices = series.map((p) => p.price);
+  const min = Math.min(...prices), max = Math.max(...prices);
+  const range = max - min || 1;
+  const stepX = (w - pad * 2) / (series.length - 1);
+  const points = series.map((p, i) => {
+    const x = pad + i * stepX;
+    const y = h - pad - ((p.price - min) / range) * (h - pad * 2);
+    return `${x},${y}`;
+  }).join(" ");
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${points}" fill="none" stroke="#4642A0" stroke-width="2"/></svg>`;
+}
+
+// --- アクセスレポート(日次のインプレッション集計) ---
+const accessReportOverlay = document.getElementById("accessReportOverlay");
+document.getElementById("accessReportFab").addEventListener("click", async () => {
+  accessReportOverlay.classList.remove("hidden");
+  const list = document.getElementById("accessReportList");
+  list.innerHTML = `<div class="fb-empty">読み込み中...</div>`;
+  try {
+    const res = await fetch("/api/analysis-reports?type=impression");
+    const reports = await res.json();
+    if (reports.length === 0) {
+      list.innerHTML = `<div class="fb-empty">まだレポートがありません(日次で自動生成されます)</div>`;
+      return;
+    }
+    list.innerHTML = reports.map((r) => `
+      <div class="cl-item">
+        <div class="cl-date">${formatDate(r.createdAt)}</div>
+        <div class="cl-content">${escapeHtml(r.content)}</div>
+      </div>`).join("");
+  } catch {
+    list.innerHTML = `<div class="fb-empty">読み込みに失敗しました</div>`;
+  }
+});
+document.getElementById("accessReportClose").addEventListener("click", () => accessReportOverlay.classList.add("hidden"));
+accessReportOverlay.addEventListener("click", (e) => { if (e.target === accessReportOverlay) accessReportOverlay.classList.add("hidden"); });
+
+// サイトを開いた回数を記録する(インプレッション分析レポート用。失敗しても表示には影響させない)。
+fetch("/api/pageview", { method: "POST" }).catch(() => {});
 
 loadItems();
 </script>

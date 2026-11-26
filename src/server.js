@@ -2,7 +2,8 @@ import "dotenv/config";
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { addReaction, listItems } from "./lib/store.js";
+import { addReaction, listItems, incrementViewCount, logPageView } from "./lib/store.js";
+import { createClient } from "@supabase/supabase-js";
 import {
   submitFeedback,
   listFeedback,
@@ -13,6 +14,10 @@ import {
   deleteFeedbackReply
 } from "./lib/feedbackStore.js";
 import { listAnalysisReports } from "./lib/analysisReportsStore.js";
+
+function getSupabase() {
+  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, "..", "public");
@@ -34,12 +39,11 @@ app.get("/api/items", async (req, res) => {
 
 app.use(express.json());
 
-// 記事に対する「要る/要らない」反応を記録するだけのAPI。
-// 方針通り、この反応は表示中の一覧には即時反映しない(ルール改善の材料として蓄積するだけ)。
+// 記事に対する「参考になった」反応を記録するだけのAPI(旧「要る/要らない」から変更)。
 app.post("/api/items/:id/reaction", async (req, res) => {
   const { judgement, userId = "local-user" } = req.body ?? {};
-  if (judgement !== "want" && judgement !== "not_want") {
-    res.status(400).json({ error: "judgement must be 'want' or 'not_want'" });
+  if (judgement !== "useful") {
+    res.status(400).json({ error: "judgement must be 'useful'" });
     return;
   }
   try {
@@ -47,6 +51,51 @@ app.post("/api/items/:id/reaction", async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     res.status(404).json({ error: err.message });
+  }
+});
+
+// 記事の閲覧回数を1増やすAPI(「社内で注目されているニュース」ランキング用)。
+app.post("/api/items/:id/view", async (req, res) => {
+  try {
+    await incrementViewCount(req.params.id);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(404).json({ error: err.message });
+  }
+});
+
+// サイトを開いた回数を1件記録するAPI(インプレッション分析レポート用)。
+app.post("/api/pageview", async (req, res) => {
+  try {
+    await logPageView();
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 品目別の相場推移データ(グラフ描画用)。
+app.get("/api/price-points", async (req, res) => {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("price_points")
+      .select("id, item_id, commodity, price, unit, price_date, created_at")
+      .order("price_date", { ascending: true });
+    if (error) throw error;
+    res.json(
+      (data ?? []).map((row) => ({
+        id: row.id,
+        itemId: row.item_id,
+        commodity: row.commodity,
+        price: row.price,
+        unit: row.unit,
+        priceDate: row.price_date,
+        createdAt: row.created_at
+      }))
+    );
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -123,10 +172,10 @@ app.delete("/api/feedback/:id/reply/:replyId", async (req, res) => {
   }
 });
 
-// 週次分析レポートの一覧(読み取り専用)。
+// 分析レポートの一覧(読み取り専用)。?type=weekly_analysis(既定)/impression
 app.get("/api/analysis-reports", async (req, res) => {
   try {
-    res.json(await listAnalysisReports());
+    res.json(await listAnalysisReports(req.query.type || "weekly_analysis"));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
