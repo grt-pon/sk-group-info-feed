@@ -264,3 +264,66 @@ export async function isSameStory({ titleA, titleB }) {
     throw new Error(`Claudeの出力をJSONとして解釈できませんでした: ${text}`);
   }
 }
+
+/**
+ * region/sourceType/isPaywalled/isImportant の4項目(2026-11-26の機能追加分)を、
+ * 既存記事(保存済みのタイトル・要約)に遡って付与するためのバックフィル専用関数。
+ * 元記事の全文は保存していないため、可能なら呼び出し側で元ページを再取得したrawTextを渡し、
+ * 取得できない場合はタイトル・要約だけでの判定にフォールバックする想定
+ * (その場合isPaywalledの判定精度は落ちるため、不明な場合はfalse寄りに倒す)。
+ * @param {{ title: string, summary: string, sourceName: string, rawText?: string | null }} input
+ * @returns {Promise<{ region: string, sourceType: string, isPaywalled: boolean, isImportant: boolean }>}
+ */
+export async function classifyExistingItem({ title, summary, sourceName, rawText }) {
+  const anthropic = getClient();
+
+  const bodyText = rawText && rawText.trim() ? rawText : `(元記事全文は取得できなかったため、要約のみで判定します)\n${summary}`;
+
+  const prompt = `あなたは古紙・廃棄物業界の社内情報ポータルの記事に、後から分類ラベルを付け直すアシスタントです。
+以下の記事(タイトル・情報源・本文または要約)を読み、次の4つを判定してください。
+
+1. 地域(region)。次のいずれか1つ: "仙台市"、"仙台経済圏"(仙台市近郊、例: 名取市・多賀城市・富谷市・利府町・大和町等)、"宮城県"(仙台市・仙台経済圏以外の宮城県内)、"東北"(青森・岩手・秋田・山形・福島の各県。宮城県以外)、"全国・海外"(特定地域に限定されない、または上記以外の地域)。
+   具体的な地名が出てこない場合は"全国・海外"とする。
+2. 発信者の種別(sourceType)。次のいずれか1つ: "官公庁"(国・都道府県・市区町村等)、"業界団体"(組合・協会・連合会等)、"企業"(企業の公式発表・プレスリリース・自社サイト記事)、"報道機関"(新聞社・通信社・ニュースメディアによる取材記事)、"個人・SNS"(個人のnote・ブログ・SNS投稿等)。
+3. 有料記事かどうか(isPaywalled: true/false)。本文が会員登録・購読契約をしないと続きが読めない状態で、
+   途中で本文が途切れている、または「続きを読むには」「この記事は有料会員限定です」等の案内がある場合はtrue。
+   判断材料が無い・最後まで読める場合はfalse。
+4. 重要度(isImportant: true/false)。次の監視対象法令について、実際に改正(法改正・政省令改正・
+   施行規則改正・施行日決定等)があったという具体的な内容である場合のみtrueにする:
+   ${WATCHED_LAWS.join("、")}
+
+出力は必ず次のJSON形式のみで返してください(説明文や前置きは不要):
+{"region": "全国・海外", "sourceType": "企業", "isPaywalled": false, "isImportant": false}
+
+---
+タイトル: ${title}
+情報源: ${sourceName}
+
+本文または要約:
+${bodyText}
+`;
+
+  const response = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 512,
+    messages: [{ role: "user", content: prompt }]
+  });
+
+  const text = response.content
+    .filter((block) => block.type === "text")
+    .map((block) => block.text)
+    .join("\n")
+    .trim();
+
+  try {
+    const parsed = parseJsonResponse(text);
+    return {
+      region: parsed.region || "全国・海外",
+      sourceType: parsed.sourceType || "企業",
+      isPaywalled: parsed.isPaywalled === true,
+      isImportant: parsed.isImportant === true
+    };
+  } catch (err) {
+    throw new Error(`Claudeの出力をJSONとして解釈できませんでした: ${text}`);
+  }
+}
