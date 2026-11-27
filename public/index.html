@@ -1163,21 +1163,61 @@ document.getElementById("priceChartClose").addEventListener("click", () => price
 priceChartOverlay.addEventListener("click", (e) => { if (e.target === priceChartOverlay) priceChartOverlay.classList.add("hidden"); });
 
 // 品目ごとの価格推移を簡易な折れ線(SVG)で描く。ライブラリを使うほどの規模ではないため自前実装。
+// 各点にカーソルを合わせる(タップする)と、その月の正確な価格が吹き出し表示される(<title>によるネイティブツールチップ)。
+// 左に価格の目盛り(最大・最小)、下に年月のラベルも付ける。
 function sparkline(series) {
-  const w = 460, h = 70, pad = 6;
+  const w = 460, h = 110;
+  const padLeft = 54, padRight = 12, padTop = 12, padBottom = 20;
+  const plotW = w - padLeft - padRight;
+  const plotH = h - padTop - padBottom;
+
+  const formatMonth = (dateStr) => {
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
+  const formatPrice = (p) => p.toLocaleString("ja-JP");
+
   if (series.length === 1) {
-    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><circle cx="${w / 2}" cy="${h / 2}" r="3" fill="#4642A0"/></svg>`;
+    const p = series[0];
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+      <circle cx="${w / 2}" cy="${h / 2}" r="4" fill="#4642A0"><title>${escapeHtml(formatMonth(p.priceDate))}: ${formatPrice(p.price)}${escapeHtml(p.unit || "")}</title></circle>
+    </svg>`;
   }
+
   const prices = series.map((p) => p.price);
   const min = Math.min(...prices), max = Math.max(...prices);
   const range = max - min || 1;
-  const stepX = (w - pad * 2) / (series.length - 1);
-  const points = series.map((p, i) => {
-    const x = pad + i * stepX;
-    const y = h - pad - ((p.price - min) / range) * (h - pad * 2);
-    return `${x},${y}`;
-  }).join(" ");
-  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${points}" fill="none" stroke="#4642A0" stroke-width="2"/></svg>`;
+  const stepX = series.length > 1 ? plotW / (series.length - 1) : 0;
+
+  const coords = series.map((p, i) => ({
+    x: padLeft + i * stepX,
+    y: padTop + plotH - ((p.price - min) / range) * plotH,
+    p
+  }));
+  const linePoints = coords.map((c) => `${c.x},${c.y}`).join(" ");
+
+  // x軸ラベルは詰まりすぎないよう、点数が多い場合は間引く(最大6つ程度)。
+  const labelEvery = Math.max(1, Math.ceil(series.length / 6));
+
+  const circles = coords.map((c, i) => `
+    <circle cx="${c.x}" cy="${c.y}" r="3.5" fill="#4642A0" stroke="white" stroke-width="1.5">
+      <title>${escapeHtml(formatMonth(c.p.priceDate))}: ${formatPrice(c.p.price)}${escapeHtml(c.p.unit || "")}</title>
+    </circle>`).join("");
+
+  const xLabels = coords.map((c, i) => {
+    if (i % labelEvery !== 0 && i !== coords.length - 1) return "";
+    return `<text x="${c.x}" y="${h - 4}" font-size="9" fill="#999" text-anchor="middle">${escapeHtml(formatMonth(c.p.priceDate))}</text>`;
+  }).join("");
+
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <line x1="${padLeft}" y1="${padTop}" x2="${w - padRight}" y2="${padTop}" stroke="#eee" stroke-width="1"/>
+    <line x1="${padLeft}" y1="${padTop + plotH}" x2="${w - padRight}" y2="${padTop + plotH}" stroke="#eee" stroke-width="1"/>
+    <text x="${padLeft - 6}" y="${padTop + 4}" font-size="9" fill="#999" text-anchor="end">${formatPrice(max)}</text>
+    <text x="${padLeft - 6}" y="${padTop + plotH + 4}" font-size="9" fill="#999" text-anchor="end">${formatPrice(min)}</text>
+    <polyline points="${linePoints}" fill="none" stroke="#4642A0" stroke-width="2"/>
+    ${circles}
+    ${xLabels}
+  </svg>`;
 }
 
 // --- アクセスレポート(日次のインプレッション集計) ---
