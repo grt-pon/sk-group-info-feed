@@ -49,27 +49,32 @@ export async function collectNikkeiLocalTohoku(options = {}) {
 
   const results = [];
   for (const headline of relevant) {
-    // プレスリリースが先に出て、日経の報道が後追いすることがあるため検索期間は長めに取る
-    // (実例:2025年3月の発表が2026年に記事化されたケースを確認済み)。
-    const primary = await tracePrimarySource({
-      headlineTitle: headline.title,
-      searchDays: 365
-    });
-    if (!primary) {
-      results.push({ title: headline.title, skipped: true, reason: "no_primary_source_found" });
-      continue;
-    }
+    // 1件の処理失敗で以降の全件を巻き込んで取りこぼさないよう、1件ごとにtry/catchで囲む。
+    try {
+      // プレスリリースが先に出て、日経の報道が後追いすることがあるため検索期間は長めに取る
+      // (実例:2025年3月の発表が2026年に記事化されたケースを確認済み)。
+      const primary = await tracePrimarySource({
+        headlineTitle: headline.title,
+        searchDays: 365
+      });
+      if (!primary) {
+        results.push({ title: headline.title, skipped: true, reason: "no_primary_source_found" });
+        continue;
+      }
 
-    const result = await ingestItem({
-      title: primary.title,
-      rawText: primary.content,
-      sourceUrl: primary.url,
-      sourceId: SOURCE_ID,
-      sourceName: SOURCE_NAME,
-      isPrimarySource: true, // 日経ではなく、辿り着いた一次情報そのものとして扱う
-      publishedAt: null
-    });
-    results.push({ title: primary.title, ...result });
+      const result = await ingestItem({
+        title: primary.title,
+        rawText: primary.content,
+        sourceUrl: primary.url,
+        sourceId: SOURCE_ID,
+        sourceName: SOURCE_NAME,
+        isPrimarySource: true, // 日経ではなく、辿り着いた一次情報そのものとして扱う
+        publishedAt: null
+      });
+      results.push({ title: primary.title, ...result });
+    } catch (err) {
+      results.push({ title: headline.title, skipped: true, reason: `error: ${err.message}` });
+    }
   }
   return results;
 }

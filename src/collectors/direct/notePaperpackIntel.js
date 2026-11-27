@@ -41,17 +41,22 @@ export async function collectNotePaperpackIntel() {
 
   const results = [];
   for (const item of items) {
-    const pageText = await fetchArticleText(item.url);
-    const result = await ingestItem({
-      title: item.title,
-      rawText: pageText ? `${item.title}\n\n${pageText}` : item.title,
-      sourceUrl: item.url,
-      sourceId: SOURCE_ID,
-      sourceName: SOURCE_NAME,
-      isPrimarySource: false,
-      publishedAt: item.publishedAt
-    });
-    results.push({ title: item.title, ...result });
+    // 1件の処理失敗で以降の全件を巻き込んで取りこぼさないよう、1件ごとにtry/catchで囲む。
+    try {
+      const pageText = await fetchArticleText(item.url);
+      const result = await ingestItem({
+        title: item.title,
+        rawText: pageText ? `${item.title}\n\n${pageText}` : item.title,
+        sourceUrl: item.url,
+        sourceId: SOURCE_ID,
+        sourceName: SOURCE_NAME,
+        isPrimarySource: false,
+        publishedAt: item.publishedAt
+      });
+      results.push({ title: item.title, ...result });
+    } catch (err) {
+      results.push({ title: item.title, skipped: true, reason: `error: ${err.message}` });
+    }
   }
   return results;
 }

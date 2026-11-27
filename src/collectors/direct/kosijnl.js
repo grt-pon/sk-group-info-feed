@@ -99,17 +99,22 @@ export async function collectKosijnl() {
 
   const results = [];
   for (const article of issueArticles) {
-    const body = await fetchArticleBody(article.id, cookie);
-    const result = await ingestItem({
-      title: article.title,
-      rawText: body ? `${article.title}\n\n${body}` : article.title,
-      sourceUrl: ARTICLE_URL(article.id),
-      sourceId: SOURCE_ID,
-      sourceName: SOURCE_NAME,
-      isPrimarySource: false,
-      publishedAt: article.publishedAt
-    });
-    results.push({ title: article.title, ...result });
+    // 1件の処理失敗で以降の全件を巻き込んで取りこぼさないよう、1件ごとにtry/catchで囲む。
+    try {
+      const body = await fetchArticleBody(article.id, cookie);
+      const result = await ingestItem({
+        title: article.title,
+        rawText: body ? `${article.title}\n\n${body}` : article.title,
+        sourceUrl: ARTICLE_URL(article.id),
+        sourceId: SOURCE_ID,
+        sourceName: SOURCE_NAME,
+        isPrimarySource: false,
+        publishedAt: article.publishedAt
+      });
+      results.push({ title: article.title, ...result });
+    } catch (err) {
+      results.push({ title: article.title, skipped: true, reason: `error: ${err.message}` });
+    }
   }
   return results;
 }

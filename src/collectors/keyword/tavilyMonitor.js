@@ -57,7 +57,15 @@ export async function collectByKeywordWatch() {
   const results = [];
 
   for (const keyword of KEYWORDS) {
-    const found = await searchRecent(keyword, { days, maxResults });
+    // 1キーワードの検索失敗(Tavily側の一時的なエラー等)で以降のキーワードを
+    // 全部巻き込んで取りこぼさないよう、キーワードごとにtry/catchで囲む。
+    let found;
+    try {
+      found = await searchRecent(keyword, { days, maxResults });
+    } catch (err) {
+      results.push({ title: `[キーワード: ${keyword}]`, skipped: true, reason: `search_error: ${err.message}` });
+      continue;
+    }
 
     for (const article of found) {
       if (isLikelyDisposalGuide(article.title)) {
@@ -68,18 +76,23 @@ export async function collectByKeywordWatch() {
         results.push({ title: article.title, skipped: true, reason: "low_quality_source" });
         continue;
       }
-      // Tavilyが公開日を返さないことが多いため、リンク先ページ自体のmeta情報からも探す。
-      const publishedAt = article.publishedDate || (await fetchPublishedDate(article.url));
-      const result = await ingestItem({
-        title: article.title,
-        rawText: article.content,
-        sourceUrl: article.url,
-        sourceId: SOURCE_ID,
-        sourceName: SOURCE_NAME,
-        isPrimarySource: false,
-        publishedAt
-      });
-      results.push({ title: article.title, ...result });
+      // 1件の処理失敗で以降の全件を巻き込んで取りこぼさないよう、1件ごとにtry/catchで囲む。
+      try {
+        // Tavilyが公開日を返さないことが多いため、リンク先ページ自体のmeta情報からも探す。
+        const publishedAt = article.publishedDate || (await fetchPublishedDate(article.url));
+        const result = await ingestItem({
+          title: article.title,
+          rawText: article.content,
+          sourceUrl: article.url,
+          sourceId: SOURCE_ID,
+          sourceName: SOURCE_NAME,
+          isPrimarySource: false,
+          publishedAt
+        });
+        results.push({ title: article.title, ...result });
+      } catch (err) {
+        results.push({ title: article.title, skipped: true, reason: `error: ${err.message}` });
+      }
     }
   }
 

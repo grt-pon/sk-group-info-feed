@@ -59,19 +59,25 @@ export async function collectEnv() {
 
   const results = [];
   for (const item of items) {
-    // リンク先(発表資料ページ)の本文を取得し、タイトルだけでは分からない開催内容・配布資料の
-    // 中身までClaudeが要約できるようにする。取得できない場合(PDF等)はタイトルのみにフォールバックする。
-    const pageText = await fetchArticleText(item.url);
-    const result = await ingestItem({
-      title: item.title,
-      rawText: pageText ? `${item.title}\n\n${pageText}` : item.title,
-      sourceUrl: item.url,
-      sourceId: SOURCE_ID,
-      sourceName: SOURCE_NAME,
-      isPrimarySource: true,
-      publishedAt: item.publishedAt
-    });
-    results.push({ title: item.title, ...result });
+    // 1件の処理失敗(Claude APIの一時的な失敗等)で以降の全件を巻き込んで取りこぼさないよう、
+    // 1件ごとにtry/catchで囲み、失敗しても次の記事の処理を続ける。
+    try {
+      // リンク先(発表資料ページ)の本文を取得し、タイトルだけでは分からない開催内容・配布資料の
+      // 中身までClaudeが要約できるようにする。取得できない場合(PDF等)はタイトルのみにフォールバックする。
+      const pageText = await fetchArticleText(item.url);
+      const result = await ingestItem({
+        title: item.title,
+        rawText: pageText ? `${item.title}\n\n${pageText}` : item.title,
+        sourceUrl: item.url,
+        sourceId: SOURCE_ID,
+        sourceName: SOURCE_NAME,
+        isPrimarySource: true,
+        publishedAt: item.publishedAt
+      });
+      results.push({ title: item.title, ...result });
+    } catch (err) {
+      results.push({ title: item.title, skipped: true, reason: `error: ${err.message}` });
+    }
   }
   return results;
 }

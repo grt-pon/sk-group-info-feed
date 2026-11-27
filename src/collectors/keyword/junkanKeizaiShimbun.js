@@ -39,27 +39,32 @@ export async function collectJunkanKeizaiShimbun(options = {}) {
 
   const results = [];
   for (const headline of headlines) {
-    const headlineHint = [headline.organization, ...(headline.subtitles ?? [])].filter(Boolean).join(" ");
-    const primary = await tracePrimarySource({
-      headlineTitle: headline.title,
-      headlineHint,
-      searchDays: 21 // 週刊誌のダイジェストなので、報道発表からの遅れは比較的短いと想定
-    });
-    if (!primary) {
-      results.push({ title: headline.title, skipped: true, reason: "no_primary_source_found" });
-      continue;
-    }
+    // 1件の処理失敗で以降の全件を巻き込んで取りこぼさないよう、1件ごとにtry/catchで囲む。
+    try {
+      const headlineHint = [headline.organization, ...(headline.subtitles ?? [])].filter(Boolean).join(" ");
+      const primary = await tracePrimarySource({
+        headlineTitle: headline.title,
+        headlineHint,
+        searchDays: 21 // 週刊誌のダイジェストなので、報道発表からの遅れは比較的短いと想定
+      });
+      if (!primary) {
+        results.push({ title: headline.title, skipped: true, reason: "no_primary_source_found" });
+        continue;
+      }
 
-    const result = await ingestItem({
-      title: primary.title,
-      rawText: primary.content,
-      sourceUrl: primary.url,
-      sourceId: SOURCE_ID,
-      sourceName: SOURCE_NAME,
-      isPrimarySource: true, // 循環経済新聞ではなく、辿り着いた一次情報そのものとして扱う
-      publishedAt: latestIssue.date ?? null
-    });
-    results.push({ title: primary.title, ...result });
+      const result = await ingestItem({
+        title: primary.title,
+        rawText: primary.content,
+        sourceUrl: primary.url,
+        sourceId: SOURCE_ID,
+        sourceName: SOURCE_NAME,
+        isPrimarySource: true, // 循環経済新聞ではなく、辿り着いた一次情報そのものとして扱う
+        publishedAt: latestIssue.date ?? null
+      });
+      results.push({ title: primary.title, ...result });
+    } catch (err) {
+      results.push({ title: headline.title, skipped: true, reason: `error: ${err.message}` });
+    }
   }
   return results;
 }

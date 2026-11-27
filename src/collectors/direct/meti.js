@@ -61,19 +61,24 @@ export async function collectMeti() {
 
   const results = [];
   for (const item of meetings) {
-    // 開催回ページ(配布資料一覧)の本文も読ませ、議題名だけでなく何が議論されたかまで要約させる。
-    const pageText = await fetchArticleText(item.url);
-    const fallbackText = `経済産業省の産業構造審議会 資源循環経済小委員会が「${item.title}」を開催した(開催案内・配布資料のページが公開された)。`;
-    const result = await ingestItem({
-      title: `産業構造審議会 資源循環経済小委員会 ${item.title}`,
-      rawText: pageText ? `産業構造審議会 資源循環経済小委員会 ${item.title}\n\n${pageText}` : fallbackText,
-      sourceUrl: item.url,
-      sourceId: SOURCE_ID,
-      sourceName: SOURCE_NAME,
-      isPrimarySource: true,
-      publishedAt: item.publishedAt
-    });
-    results.push({ title: item.title, ...result });
+    // 1件の処理失敗で以降の全件を巻き込んで取りこぼさないよう、1件ごとにtry/catchで囲む。
+    try {
+      // 開催回ページ(配布資料一覧)の本文も読ませ、議題名だけでなく何が議論されたかまで要約させる。
+      const pageText = await fetchArticleText(item.url);
+      const fallbackText = `経済産業省の産業構造審議会 資源循環経済小委員会が「${item.title}」を開催した(開催案内・配布資料のページが公開された)。`;
+      const result = await ingestItem({
+        title: `産業構造審議会 資源循環経済小委員会 ${item.title}`,
+        rawText: pageText ? `産業構造審議会 資源循環経済小委員会 ${item.title}\n\n${pageText}` : fallbackText,
+        sourceUrl: item.url,
+        sourceId: SOURCE_ID,
+        sourceName: SOURCE_NAME,
+        isPrimarySource: true,
+        publishedAt: item.publishedAt
+      });
+      results.push({ title: item.title, ...result });
+    } catch (err) {
+      results.push({ title: item.title, skipped: true, reason: `error: ${err.message}` });
+    }
   }
   return results;
 }

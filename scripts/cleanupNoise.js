@@ -26,7 +26,9 @@ async function isNewsworthy(anthropic, title, summary) {
 
   const response = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 300,
+    // "thinking"ブロックが同じトークン予算を消費し、短いJSON出力が途中で切れることがあるため
+    // 余裕を持たせる(src/lib/claudeClient.jsで見つかった同種の問題への対応)。
+    max_tokens: 1024,
     messages: [{ role: "user", content: prompt }]
   });
   const text = response.content.filter((b) => b.type === "text").map((b) => b.text).join("").trim();

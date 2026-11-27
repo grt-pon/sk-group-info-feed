@@ -40,17 +40,22 @@ export async function collectKantoshoso() {
 
   const results = [];
   for (const item of priceLinks) {
-    const result = await ingestItem({
-      title: `古紙輸出価格動向表: ${item.title}`,
-      // PDFの中身までは読み取っておらず、リンクとタイトルのみを渡している(要約精度は限定的)。
-      rawText: `関東製紙原料直納商工組合が公表した古紙輸出価格の資料「${item.title}」が更新されました。`,
-      sourceUrl: item.url,
-      sourceId: SOURCE_ID,
-      sourceName: SOURCE_NAME,
-      isPrimarySource: true,
-      publishedAt: null
-    });
-    results.push({ title: item.title, ...result });
+    // 1件の処理失敗で以降の全件を巻き込んで取りこぼさないよう、1件ごとにtry/catchで囲む。
+    try {
+      const result = await ingestItem({
+        title: `古紙輸出価格動向表: ${item.title}`,
+        // PDFの中身までは読み取っておらず、リンクとタイトルのみを渡している(要約精度は限定的)。
+        rawText: `関東製紙原料直納商工組合が公表した古紙輸出価格の資料「${item.title}」が更新されました。`,
+        sourceUrl: item.url,
+        sourceId: SOURCE_ID,
+        sourceName: SOURCE_NAME,
+        isPrimarySource: true,
+        publishedAt: null
+      });
+      results.push({ title: item.title, ...result });
+    } catch (err) {
+      results.push({ title: item.title, skipped: true, reason: `error: ${err.message}` });
+    }
   }
   return results;
 }
