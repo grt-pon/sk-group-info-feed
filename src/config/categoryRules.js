@@ -102,6 +102,9 @@ const LOW_QUALITY_URL_PATTERNS = [
   "mordorintelligence.com",
   "fortunebusinessinsights.com",
   "procurementresource.com",
+  // 営業ノウハウ系ブログ等、実質的には自社サービスへの集客を目的とした企業向けコンテンツマーケティング
+  // (ニュースではなく「値上げ交渉の進め方」のようなノウハウ記事)
+  "eigyo-shindan.com",
   // SNS全般
   "x.com",
   "twitter.com",

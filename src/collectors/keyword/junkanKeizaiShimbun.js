@@ -28,7 +28,9 @@ async function fetchDigestIssues() {
 export async function collectJunkanKeizaiShimbun(options = {}) {
   const { maxItems = 5 } = options;
   const issues = await fetchDigestIssues();
-  const latestIssue = issues[0]; // 配列は新しい号が先頭
+  // 休刊号(suspended: true。祝日等で発行自体がない週)はcontentsを持たないため、
+  // 配列先頭からそれをスキップして、実際に記事がある最新号を探す。
+  const latestIssue = issues.find((issue) => !issue.suspended && Array.isArray(issue.contents));
   if (!latestIssue) {
     return [];
   }
