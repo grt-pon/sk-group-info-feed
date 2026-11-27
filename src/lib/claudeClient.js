@@ -205,7 +205,10 @@ export async function isMatchingPrimarySource({ headlineTitle, headlineOrg, cand
 
   const response = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 256,
+    // 推論("thinking"ブロック)が同じトークン予算を消費するため、短い出力(JSON数十文字)しか
+    // 期待していなくても余裕を持った値にする。小さすぎると、推論に予算を使い切ってJSON本体が
+    // 途中で切れ、パース失敗(空文字や"{"だけ等)になる事例が実際にあった。
+    max_tokens: 1024,
     messages: [{ role: "user", content: prompt }]
   });
 
@@ -251,7 +254,8 @@ export async function isSameStory({ titleA, titleB }) {
 
   const response = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 100,
+    // 理由は isMatchingPrimarySource と同じ("thinking"ブロックが予算を消費するため余裕を持たせる)。
+    max_tokens: 1024,
     messages: [{ role: "user", content: prompt }]
   });
 
@@ -309,7 +313,8 @@ ${bodyText}
 
   const response = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 512,
+    // 理由はisMatchingPrimarySourceと同じ("thinking"ブロックが予算を消費するため余裕を持たせる)。
+    max_tokens: 1536,
     messages: [{ role: "user", content: prompt }]
   });
 
