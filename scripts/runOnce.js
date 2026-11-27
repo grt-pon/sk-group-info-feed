@@ -12,7 +12,8 @@ import { collectSendai } from "../src/collectors/direct/sendai.js";
 import { collectNikkeiLocalTohoku } from "../src/collectors/keyword/nikkeiLocal.js";
 import { collectKosijnl } from "../src/collectors/direct/kosijnl.js";
 import { collectNotePaperpackIntel } from "../src/collectors/direct/notePaperpackIntel.js";
-import { collectPrpcExportPrices } from "../src/collectors/direct/prpcExportPrices.js";
+// 古紙再生促進センターの輸出統計(相場)は月1回しか更新されないため、ここには含めず
+// scripts/collectPaperPrices.js + .github/workflows/collect-paper-prices.yml で月次実行する。
 
 // 未実装のものも並べておき、実装が進んだらここに手を加えずそのまま動くようにする。
 const COLLECTORS = [
@@ -29,8 +30,7 @@ const COLLECTORS = [
   { name: "宮城県", run: collectMiyagi },
   { name: "仙台市", run: collectSendai },
   { name: "日経地域面(東北)", run: collectNikkeiLocalTohoku },
-  { name: "note(paperpack_intel)", run: collectNotePaperpackIntel },
-  { name: "古紙再生促進センター(輸出統計・相場)", run: collectPrpcExportPrices }
+  { name: "note(paperpack_intel)", run: collectNotePaperpackIntel }
 ];
 
 async function main() {
