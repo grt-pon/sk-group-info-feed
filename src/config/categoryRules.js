@@ -77,9 +77,13 @@ export function isLikelyDisposalGuide(title) {
   return false;
 }
 
-// 用語集(用語の解説ページ。ニュースではない)や、2ch/5ch系のまとめ・転載サイト(発信元として
-// 不適切)のURLパターン。実際に混入した事例(kankyo-business.jpの/dictionary/配下、2nn.jp)を
-// もとに追加した。ニュースらしい見出しが付いていても、URL自体がこれらに該当する場合は除外する。
+// 用語集(用語の解説ページ。ニュースではない)、2ch/5ch系のまとめ・転載サイト、中国版Wikipedia、
+// Q&A掲示板、市場調査会社の定型プレスリリース(「〇〇市場、20XX年に〇億ドル規模へ」のような
+// テンプレ文面で自社の有料レポートへ誘導する内容。商材を変えて量産されている)、SNS投稿
+// (公式アカウントの発信であっても、同じ内容は発信元の公式サイト・プレスリリースに載るはずで、
+// SNS投稿をリンク先にする必要がない。リンク切れ・ログイン要求のリスクも高いため一律除外する)
+// のURLパターン。実際に混入した事例をもとに追加した。
+// ニュースらしい見出しが付いていても、URL自体がこれらに該当する場合は除外する。
 const LOW_QUALITY_URL_PATTERNS = [
   "/dictionary/",
   "2nn.jp",
@@ -87,7 +91,26 @@ const LOW_QUALITY_URL_PATTERNS = [
   "2ch.net",
   "open2ch.net",
   "matomame",
-  "matome"
+  "matome",
+  "baike.baidu.com",
+  "chiebukuro.yahoo.co.jp",
+  "hida-ch.com",
+  "exblog.jp",
+  // 市場調査会社の定型プレスリリース
+  "straitsresearch.com",
+  "imarcgroup.com",
+  "mordorintelligence.com",
+  "fortunebusinessinsights.com",
+  "procurementresource.com",
+  // SNS全般
+  "x.com",
+  "twitter.com",
+  "instagram.com",
+  "facebook.com",
+  "youtube.com",
+  "threads.com",
+  "linkedin.com",
+  "tiktok.com"
 ];
 
 /**
