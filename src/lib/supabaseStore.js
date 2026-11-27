@@ -88,6 +88,32 @@ export async function savePricePoints(itemId, points) {
 }
 
 /**
+ * 古紙再生促進センターの貿易統計(月次)から計算した、品目ごとの確実な単価を保存する。
+ * item_idを持たない(特定の記事に紐づかない)点がsavePricePointsとの違い。
+ * 同じ品目・同じ月の行が既にあれば削除してから保存し直す(月1回の実行でも、再実行しても
+ * 重複が積み上がらないようにするため)。
+ * @param {string} commodity
+ * @param {number} price
+ * @param {string} unit
+ * @param {string} priceDate "YYYY-MM-DD"形式(その月の1日とする)
+ */
+export async function upsertOfficialPricePoint(commodity, price, unit, priceDate) {
+  const supabase = getClient();
+  const { error: deleteError } = await supabase
+    .from("price_points")
+    .delete()
+    .is("item_id", null)
+    .eq("commodity", commodity)
+    .eq("price_date", priceDate);
+  if (deleteError) throw new Error(`相場データの重複削除に失敗しました: ${deleteError.message}`);
+
+  const { error: insertError } = await supabase
+    .from("price_points")
+    .insert({ item_id: null, commodity, price, unit, price_date: priceDate });
+  if (insertError) throw new Error(`相場データの保存に失敗しました: ${insertError.message}`);
+}
+
+/**
  * 記事の閲覧回数を1増やす(「社内で注目されているニュース」ランキング用)。
  * 読み取り→更新のため、同時アクセスが重なった場合に1〜2件ずれる可能性はあるが、
  * アクセス規模を踏まえ許容する(reactions追記と同じ考え方)。

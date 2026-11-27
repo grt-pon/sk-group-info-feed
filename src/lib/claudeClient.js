@@ -2,6 +2,7 @@ import "dotenv/config";
 import Anthropic from "@anthropic-ai/sdk";
 import { CATEGORIES } from "../config/categories.js";
 import { WATCHED_LAWS } from "../config/watchedLaws.js";
+import { TRACKED_COMMODITIES } from "../config/trackedCommodities.js";
 
 const MODEL = "claude-sonnet-5";
 
@@ -133,20 +134,32 @@ ${rawText}
 }
 
 /**
- * 記事本文から品目別の相場(価格)情報を抽出する。相場推移グラフ(品目ごとの価格の時系列)の
- * データソースとして使う。本文に具体的な数値が無い場合は空配列を返す。
- * ingest.js側で、カテゴリに「資源相場」が含まれる記事に対してのみ呼び出す想定
- * (関係ない記事にまでAPIを呼ぶコストを避けるため)。
+ * 記事本文から、追跡対象品目(TRACKED_COMMODITIES)の相場(価格)情報を抽出する。
+ * 相場推移グラフのデータソースとして使う。
+ *
+ * 以前は古紙・金属・プラスチック等あらゆる品目を自由記述で抽出していたが、記事ごとに
+ * 表記が割れ(「段ボール古紙」「ダンボール」「日本OCC(輸出)」等)、1品目あたり数件しか
+ * データが集まらずグラフが点や直線だけになる問題があった。追跡対象品目を3つに絞り、
+ * 表記を統一することで解消する。
+ *
+ * また、月次の確実な基準値は古紙再生促進センターの貿易統計(prpcExportPrices.js)から
+ * 別途取得しているため、ここでの抽出は古紙ジャーナル(信頼できる業界紙)の記事に限定して
+ * 呼び出す想定(ingest.js側でsourceIdがkosijnlの場合のみ呼び出す)。
  * @param {{ title: string, rawText: string }} input
  * @returns {Promise<Array<{ commodity: string, price: number, unit: string, priceDate: string | null }>>}
  */
 export async function extractPricePoints({ title, rawText }) {
   const anthropic = getClient();
 
-  const prompt = `以下の記事から、古紙・金属・プラスチック等の品目ごとの具体的な取引価格・相場を抽出してください。
+  const prompt = `以下の記事から、次の品目に関する具体的な取引価格・相場を抽出してください。
+これ以外の品目(金属・プラスチック・パルプ等)は抽出対象外とし、該当しない場合はその品目を含めないこと:
+${TRACKED_COMMODITIES.join("、")}
+
 抽出条件:
 - 「○○(品目名)が1kgあたり○○円」のように、品目名と具体的な金額が明記されている箇所のみを対象とする
 - 「上昇した」「下落した」のような傾向の説明だけで金額が書かれていない場合は抽出しない
+- commodityは必ず上記の品目名(${TRACKED_COMMODITIES.join("、")})のいずれかをそのまま使うこと
+  (「ダンボール」「OCC」等の表記はすべて「段ボール古紙」に正規化する)
 - 本文中に価格の基準日・対象月が書かれていればpriceDateに"YYYY-MM-DD"形式で入れる(日が不明なら01とする)。書かれていなければnullとする
 - 複数の品目・時点があれば配列に複数件入れてよい。該当なしの場合は空配列を返す
 
@@ -334,6 +347,66 @@ ${bodyText}
       isPaywalled: parsed.isPaywalled === true,
       isImportant: parsed.isImportant === true
     };
+  } catch (err) {
+    throw new Error(`Claudeの出力をJSONとして解釈できませんでした: ${text}`);
+  }
+}
+
+/**
+ * 古紙再生促進センターが財務省貿易統計をもとに毎月公表する「古紙品種別輸出先別輸出実績」PDFから、
+ * 新聞古紙・雑誌(及びその他印刷物)・段ボール古紙(クラフト紙及びクラフト板紙)の最新月の
+ * 輸出数量・輸出金額(全国合計=「計」列)を抽出する。相場推移グラフの月次の確実な基準値として使う
+ * (ニュース記事からの自由記述抽出と違い、表記ゆれが起きない公式統計のため)。
+ * 単価の計算(金額÷数量)はこの関数の呼び出し側で行う(AIに計算させず、確実な算数は人間側のコードで行う方針)。
+ * @param {Buffer} pdfBuffer
+ * @returns {Promise<{
+ *   month: string,
+ *   newspaper: { quantityTon: number, valueFobThousandYen: number } | null,
+ *   magazine: { quantityTon: number, valueFobThousandYen: number } | null,
+ *   cardboard: { quantityTon: number, valueFobThousandYen: number } | null
+ * }>}
+ */
+export async function extractPaperExportPrices(pdfBuffer) {
+  const anthropic = getClient();
+
+  const prompt = `添付は古紙再生促進センターが公表している「古紙品種別輸出先別輸出実績」のPDFです(財務省貿易統計をもとに、品種(新聞古紙/雑誌及びその他印刷物/クラフト紙及びクラフト板紙(未晒のもの)等)ごとに、国別の輸出数量(トン)・輸出金額(FOB千円)が月次で掲載されています)。
+
+このPDFの中から、最新月(月次データが埋まっている一番新しい"YYYY年M月"の行。それより新しい月の欄が空白の場合はその月は対象外とする)について、次の3つの品種の「計」列(全輸出先国の合計)の数量(トン)と金額(FOB千円)を抽出してください:
+1. 新聞古紙(「新聞古紙」という品種ブロック)
+2. 雑誌古紙(「雑誌及びその他印刷物(中白、切付・中更反古)」という品種ブロック)
+3. 段ボール古紙(「クラフト紙及びクラフト板紙(未晒のもの)」という品種ブロック)
+
+出力は必ず次のJSON形式のみで返してください(説明文や前置きは不要。対象の品種が見つからない場合はnullにする):
+{"month": "2026-09", "newspaper": {"quantityTon": 50171, "valueFobThousandYen": 1287287}, "magazine": {"quantityTon": 92852, "valueFobThousandYen": 2389776}, "cardboard": {"quantityTon": 1009565, "valueFobThousandYen": 23218696}}
+`;
+
+  const response = await anthropic.messages.create({
+    model: MODEL,
+    // 複雑な複数表のPDFを読んで該当セルを探すため、thinkingブロックの消費を見込んで
+    // 余裕を持たせる(他の関数で見つかった同種の問題への対応)。
+    max_tokens: 4096,
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "document",
+            source: { type: "base64", media_type: "application/pdf", data: pdfBuffer.toString("base64") }
+          },
+          { type: "text", text: prompt }
+        ]
+      }
+    ]
+  });
+
+  const text = response.content
+    .filter((block) => block.type === "text")
+    .map((block) => block.text)
+    .join("\n")
+    .trim();
+
+  try {
+    return parseJsonResponse(text);
   } catch (err) {
     throw new Error(`Claudeの出力をJSONとして解釈できませんでした: ${text}`);
   }

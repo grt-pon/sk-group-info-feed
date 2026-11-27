@@ -87,8 +87,10 @@ export async function ingestItem(rawItem) {
   cache.push({ id: itemId, title: cleanTitle });
 
   // 相場推移グラフ用に、品目別の価格を抽出して別テーブルに保存する。
-  // コストを抑えるため「資源相場」カテゴリが付いた記事に対してのみ呼び出す。
-  if (categories.includes("資源相場")) {
+  // 月次の確実な基準値は古紙再生促進センターの貿易統計(prpcExportPrices.js)から別途取得しているため、
+  // ここでの記事からの抽出は、信頼できる業界紙(古紙ジャーナル)の記事に限定する
+  // (一般のニュース全体から拾うと、表記ゆれや関係の薄い品目が混ざりやすいため)。
+  if (sourceId === "kosijnl" && categories.includes("資源相場")) {
     try {
       const pricePoints = await extractPricePoints({ title: cleanTitle, rawText });
       await savePricePoints(itemId, pricePoints);

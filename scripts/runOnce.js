@@ -12,6 +12,7 @@ import { collectSendai } from "../src/collectors/direct/sendai.js";
 import { collectNikkeiLocalTohoku } from "../src/collectors/keyword/nikkeiLocal.js";
 import { collectKosijnl } from "../src/collectors/direct/kosijnl.js";
 import { collectNotePaperpackIntel } from "../src/collectors/direct/notePaperpackIntel.js";
+import { collectPrpcExportPrices } from "../src/collectors/direct/prpcExportPrices.js";
 
 // 未実装のものも並べておき、実装が進んだらここに手を加えずそのまま動くようにする。
 const COLLECTORS = [
@@ -28,7 +29,8 @@ const COLLECTORS = [
   { name: "宮城県", run: collectMiyagi },
   { name: "仙台市", run: collectSendai },
   { name: "日経地域面(東北)", run: collectNikkeiLocalTohoku },
-  { name: "note(paperpack_intel)", run: collectNotePaperpackIntel }
+  { name: "note(paperpack_intel)", run: collectNotePaperpackIntel },
+  { name: "古紙再生促進センター(輸出統計・相場)", run: collectPrpcExportPrices }
 ];
 
 async function main() {
@@ -40,8 +42,10 @@ async function main() {
       for (const r of results) {
         if (r.skipped) {
           console.log(`  - スキップ(${r.reason}): ${r.title}`);
-        } else {
+        } else if (r.itemId) {
           console.log(`  - 保存(${r.itemId}): ${r.title}`);
+        } else {
+          console.log(`  - 保存: ${r.title}`);
         }
       }
     } catch (err) {
