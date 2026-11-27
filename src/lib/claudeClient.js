@@ -2,6 +2,7 @@ import "dotenv/config";
 import Anthropic from "@anthropic-ai/sdk";
 import { CATEGORIES } from "../config/categories.js";
 import { WATCHED_LAWS } from "../config/watchedLaws.js";
+import { LICENSED_WASTE_ITEMS } from "../config/licensedWasteItems.js";
 import { TRACKED_COMMODITIES } from "../config/trackedCommodities.js";
 
 const MODEL = "claude-sonnet-5";
@@ -81,10 +82,14 @@ export async function summarizeAndClassify({ title, rawText, ruleCategories }) {
    常にisNewsworthy: trueとする(上記の「軽微な活動報告」の除外対象にはしない)。
    一般の貨物トラック・乗用車同士の事故等、ごみ収集車両が関与しない交通事故は対象外(情報量が
    多すぎるため、ごみ収集車両が関与するものだけに絞る)。
-5. 重要度(isImportant: true/false)。次の監視対象法令について、実際に改正(法改正・政省令改正・
-   施行規則改正・施行日決定等)があったという具体的な内容である場合のみtrueにする。
+5. 重要度(isImportant: true/false)。次のいずれかに該当する具体的な内容である場合にtrueにする。
    単なる法解釈の説明・セミナー告知・過去の内容のおさらいはfalseとする:
-   ${WATCHED_LAWS.join("、")}
+   (a) 次の監視対象法令について、実際に改正(法改正・政省令改正・施行規則改正・施行日決定等)があった
+       ${WATCHED_LAWS.join("、")}
+   (b) 当社が収集運搬・処分の許可を受けている以下の廃棄物品目について、国・自治体から新しい処理基準・
+       分類変更・注意喚起・ガイドライン改定・規制強化が発表された(「法改正」という形を取らない
+       通知・ガイドラインでもよい):
+       ${LICENSED_WASTE_ITEMS.join("、")}
 6. 地域(region)。次のいずれか1つ: "仙台市"、"仙台経済圏"(仙台市近郊、例: 名取市・多賀城市・富谷市・利府町・大和町等)、"宮城県"(仙台市・仙台経済圏以外の宮城県内)、"東北"(青森・岩手・秋田・山形・福島の各県。宮城県以外)、"全国・海外"(特定地域に限定されない、または上記以外の地域)。
    本文中に具体的な地名が出てこない場合は"全国・海外"とする。
 7. 発信者の種別(sourceType)。次のいずれか1つ: "官公庁"(国・都道府県・市区町村等)、"業界団体"(組合・協会・連合会等)、"企業"(企業の公式発表・プレスリリース・自社サイト記事)、"報道機関"(新聞社・通信社・ニュースメディアによる取材記事)、"個人・SNS"(個人のnote・ブログ・SNS投稿等)。
@@ -311,9 +316,12 @@ export async function classifyExistingItem({ title, summary, sourceName, rawText
 3. 有料記事かどうか(isPaywalled: true/false)。本文が会員登録・購読契約をしないと続きが読めない状態で、
    途中で本文が途切れている、または「続きを読むには」「この記事は有料会員限定です」等の案内がある場合はtrue。
    判断材料が無い・最後まで読める場合はfalse。
-4. 重要度(isImportant: true/false)。次の監視対象法令について、実際に改正(法改正・政省令改正・
-   施行規則改正・施行日決定等)があったという具体的な内容である場合のみtrueにする:
-   ${WATCHED_LAWS.join("、")}
+4. 重要度(isImportant: true/false)。次のいずれかに該当する具体的な内容である場合にtrueにする:
+   (a) 次の監視対象法令について、実際に改正(法改正・政省令改正・施行規則改正・施行日決定等)があった
+       ${WATCHED_LAWS.join("、")}
+   (b) 当社が収集運搬・処分の許可を受けている以下の廃棄物品目について、国・自治体から新しい処理基準・
+       分類変更・注意喚起・ガイドライン改定・規制強化が発表された:
+       ${LICENSED_WASTE_ITEMS.join("、")}
 
 出力は必ず次のJSON形式のみで返してください(説明文や前置きは不要):
 {"region": "全国・海外", "sourceType": "企業", "isPaywalled": false, "isImportant": false}
