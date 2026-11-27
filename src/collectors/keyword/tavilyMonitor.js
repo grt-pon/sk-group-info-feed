@@ -1,6 +1,6 @@
 import { searchRecent } from "../../lib/tavilyClient.js";
 import { ingestItem } from "../../pipeline/ingest.js";
-import { isLikelyDisposalGuide } from "../../config/categoryRules.js";
+import { isLikelyDisposalGuide, isLowQualitySourceUrl } from "../../config/categoryRules.js";
 import { fetchPublishedDate } from "../../lib/articleFetcher.js";
 
 const SOURCE_ID = "general-keyword-watch";
@@ -62,6 +62,10 @@ export async function collectByKeywordWatch() {
     for (const article of found) {
       if (isLikelyDisposalGuide(article.title)) {
         results.push({ title: article.title, skipped: true, reason: "disposal_guide_noise" });
+        continue;
+      }
+      if (isLowQualitySourceUrl(article.url)) {
+        results.push({ title: article.title, skipped: true, reason: "low_quality_source" });
         continue;
       }
       // Tavilyが公開日を返さないことが多いため、リンク先ページ自体のmeta情報からも探す。

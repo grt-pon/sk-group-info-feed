@@ -76,3 +76,28 @@ export function isLikelyDisposalGuide(title) {
   if (title.length <= 20 && MUNICIPALITY_SUFFIX.test(title.trim())) return true;
   return false;
 }
+
+// 用語集(用語の解説ページ。ニュースではない)や、2ch/5ch系のまとめ・転載サイト(発信元として
+// 不適切)のURLパターン。実際に混入した事例(kankyo-business.jpの/dictionary/配下、2nn.jp)を
+// もとに追加した。ニュースらしい見出しが付いていても、URL自体がこれらに該当する場合は除外する。
+const LOW_QUALITY_URL_PATTERNS = [
+  "/dictionary/",
+  "2nn.jp",
+  "5ch.net",
+  "2ch.net",
+  "open2ch.net",
+  "matomame",
+  "matome"
+];
+
+/**
+ * URLが用語集ページ・2ch系まとめサイト等、発信元として不適切な定型パターンに
+ * 一致するかを判定する。
+ * @param {string} url
+ * @returns {boolean}
+ */
+export function isLowQualitySourceUrl(url) {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  return LOW_QUALITY_URL_PATTERNS.some((p) => lower.includes(p));
+}
